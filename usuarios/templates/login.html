@@ -1,0 +1,12 @@
+<form method="POST">
+  {% csrf_token %}
+  <label>Usuario:</label>
+  <input type="text" name="username" required>
+  <label>Contraseña:</label>
+  <input type="password" name="password" required>
+  <button type="submit">Iniciar sesión</button>
+
+  {% if error %}
+  <p style="color:red;">{{ error }}</p>
+  {% endif %}
+</form>

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>La Casa de la Pradera</title>
+</head>
+<body>
+  <nav>
+    <a href="{% url 'logout' %}">Cerrar sesión</a>
+  </nav>
+
+  <header>
+    <h1>La Casa de la Pradera</h1>
+    <hr>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
