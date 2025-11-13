@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Editar Cuadrilla: {{ cuadrilla.nombre }}</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label>Nombre de la cuadrilla:</label>
+        <input type="text" name="nombre" value="{{ cuadrilla.nombre }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label>Líder (opcional):</label>
+        <select name="lider">
+            <option value="">-- Ninguno --</option>
+            {% for t in trabajadores %}
+            <option value="{{ t.id }}" {% if cuadrilla.lider and t.id == cuadrilla.lider.id %}selected{% endif %}>
+                {{ t.username }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <h4>Trabajadores y Roles asignados</h4>
+    <p>Selecciona o desmarca los trabajadores que pertenecerán a la cuadrilla y su respectivo rol.</p>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Incluir</th>
+                <th>Trabajador</th>
+                <th>Rol actual</th>
+                <th>Nuevo Rol</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in trabajadores %}
+                {% with asignacion=asignaciones|get_item:t.id %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="trabajadores" value="{{ t.id }}"
+                            {% if asignacion %}checked{% endif %}>
+                    </td>
+                    <td>{{ t.username }}</td>
+                    <td>
+                        {% if asignacion and asignacion.rol %}
+                            {{ asignacion.rol.nombre }}
+                        {% else %}
+                            Sin rol
+                        {% endif %}
+                    </td>
+                    <td>
+                        <select name="roles">
+                            <option value="">-- Rol --</option>
+                            {% for r in roles %}
+                                <option value="{{ r.id }}"
+                                    {% if asignacion and asignacion.rol and r.id == asignacion.rol.id %}selected{% endif %}>
+                                    {{ r.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                {% endwith %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-primary mt-2">Guardar Cambios</button>
+    <a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-2">Cancelar</a>
+</form>
+
+{% endblock %}

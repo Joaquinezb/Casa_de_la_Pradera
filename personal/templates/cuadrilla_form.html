@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Crear Cuadrilla</h2>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label>Nombre de cuadrilla:</label><br>
+        <input type="text" name="nombre" required>
+    </div>
+
+    <div class="mb-3">
+        <label>Proyecto asociado:</label><br>
+        <select name="proyecto" required>
+            <option value="">-- Selecciona un proyecto --</option>
+            {% for p in proyectos %}
+            <option value="{{ p.id }}">{{ p.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label>Líder (opcional):</label><br>
+        <select name="lider">
+            <option value="">-- Ninguno --</option>
+            {% for t in trabajadores %}
+            <option value="{{ t.id }}">{{ t.username }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <h4>Seleccionar trabajadores y roles</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Seleccionar</th>
+                <th>Trabajador</th>
+                <th>Rol</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in trabajadores %}
+            <tr>
+                <td>
+                    <input type="checkbox" name="trabajadores" value="{{ t.id }}">
+                </td>
+                <td>{{ t.username }}</td>
+                <td>
+                    <select name="roles">
+                        <option value="">-- Rol --</option>
+                        {% for r in roles %}
+                        <option value="{{ r.id }}">{{ r.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-primary mt-2">Guardar Cuadrilla</button>
+    <a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-2">Cancelar</a>
+</form>
+
+{% endblock %}
