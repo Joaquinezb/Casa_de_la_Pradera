@@ -127,7 +127,10 @@
                             —
                         {% endif %}
                     </td>
-
+                    <td>
+                        <a href="{% url 'personal:editar_estado_trabajador' a.trabajador.trabajador_profile.id %}"
+                            class="btn btn-sm btn-warning">Cambiar estado</a>
+                    </td>
                 </tr>
             {% endwith %}
         {% endwith %}

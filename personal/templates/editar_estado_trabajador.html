@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Editar estado de {{ trabajador.nombre }} {{ trabajador.apellido }}</h2>
+
+<form method="post">
+    {% csrf_token %}
+
+    <label>Estado manual:</label>
+    <select name="estado_manual">
+
+        <option value="disponible" 
+            {% if perfil.estado_manual == 'disponible' %}selected{% endif %}>
+            Disponible
+        </option>
+
+        <option value="no_disponible"
+            {% if perfil.estado_manual == 'no_disponible' %}selected{% endif %}>
+            No disponible
+        </option>
+
+        <option value="licencia"
+            {% if perfil.estado_manual == 'licencia' %}selected{% endif %}>
+            Licencia médica
+        </option>
+
+        <option value="vacaciones"
+            {% if perfil.estado_manual == 'vacaciones' %}selected{% endif %}>
+            Vacaciones
+        </option>
+
+    </select>
+
+    <br><br>
+    <button class="btn btn-primary">Guardar cambios</button>
+</form>
+
+{% endblock %}

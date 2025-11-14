@@ -29,6 +29,12 @@ urlpatterns = [
         views.editar_cuadrilla,
         name='editar_cuadrilla'
     ),
+    
+    path(
+    'trabajador/<int:trabajador_id>/estado/',
+    views.editar_estado_trabajador,
+    name='editar_estado_trabajador'
+    ),
 
 
     # ============================================================
