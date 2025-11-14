@@ -48,7 +48,10 @@ def crear_cuadrilla(request):
                 rol=rol
             )
 
-        return redirect('proyectos:panel')
+        # Después de editar, redirigimos al detalle de la cuadrilla para que
+        # el usuario pueda verla/volver a editar fácilmente incluso si quedó
+        # sin proyecto asignado.
+        return redirect('personal:detalle_cuadrilla', cuadrilla.id)
 
     return render(request, 'cuadrilla_form.html', {
         'proyectos': proyectos,
@@ -63,17 +66,31 @@ def editar_cuadrilla(request, cuadrilla_id):
     cuadrilla = get_object_or_404(Cuadrilla, id=cuadrilla_id)
     trabajadores = User.objects.exclude(groups__name__in=['JefeProyecto'])
     roles = Rol.objects.all()
+    proyectos = Proyecto.objects.filter(jefe=request.user)
 
     if request.method == 'POST':
+        # Actualizar datos básicos
         cuadrilla.nombre = request.POST.get('nombre')
         lider_id = request.POST.get('lider')
         cuadrilla.lider = User.objects.filter(id=lider_id).first()
+
+        # Permitir reasignar la cuadrilla a otro proyecto del jefe
+        proyecto_id = request.POST.get('proyecto')
+        if proyecto_id:
+            cuadrilla.proyecto = Proyecto.objects.filter(id=proyecto_id, jefe=request.user).first()
+        else:
+            cuadrilla.proyecto = None
+
         cuadrilla.save()
-        # Reemplazamos asignaciones existentes por las nuevas seleccionadas
-        Asignacion.objects.filter(cuadrilla=cuadrilla).delete()
 
-        seleccionados = request.POST.getlist('trabajadores')
+        # Gestión incremental de asignaciones: actualizar roles, añadir o eliminar trabajadores
+        seleccionados = set(request.POST.getlist('trabajadores'))
 
+        # Mapa de asignaciones actuales: llave como string del id del trabajador
+        actuales_qs = Asignacion.objects.filter(cuadrilla=cuadrilla)
+        actuales = {str(a.trabajador.id): a for a in actuales_qs}
+
+        # Añadir o actualizar los seleccionados
         for trabajador_id in seleccionados:
             trabajador = User.objects.get(id=trabajador_id)
             role_field = request.POST.get(f'roles_{trabajador_id}')
@@ -84,11 +101,21 @@ def editar_cuadrilla(request, cuadrilla_id):
                 except (ValueError, TypeError):
                     rol = None
 
-            Asignacion.objects.create(
-                trabajador=trabajador,
-                cuadrilla=cuadrilla,
-                rol=rol
-            )
+            if trabajador_id in actuales:
+                asign = actuales[trabajador_id]
+                # Actualizar rol si cambió
+                if (asign.rol and rol and asign.rol.id != rol.id) or (asign.rol is None and rol is not None) or (asign.rol is not None and rol is None):
+                    asign.rol = rol
+                    asign.save()
+                # ya procesado
+                actuales.pop(trabajador_id, None)
+            else:
+                # Crear nueva asignación
+                Asignacion.objects.create(trabajador=trabajador, cuadrilla=cuadrilla, rol=rol)
+
+        # Los que quedaron en `actuales` no fueron seleccionados ahora -> eliminarlos
+        for rest_id, asign in list(actuales.items()):
+            asign.delete()
 
         return redirect('proyectos:panel')
 

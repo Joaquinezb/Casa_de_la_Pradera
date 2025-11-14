@@ -25,6 +25,9 @@
                         <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-outline-primary ms-2">
                             Ver cuadrilla
                         </a>
+                        <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-outline-secondary ms-2">
+                            Editar cuadrilla
+                        </a>
                     </li>
                 {% endfor %}
             </ul>
@@ -46,4 +49,23 @@
 {% else %}
 <p class="mt-3">No tienes proyectos registrados aún.</p>
 {% endif %}
+    
+    {% if cuadrillas_sin_proyecto and cuadrillas_sin_proyecto|length > 0 %}
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5>Cuadrillas sin proyecto</h5>
+            <ul>
+            {% for c in cuadrillas_sin_proyecto %}
+                <li>
+                    <strong>{{ c.nombre }}</strong>
+                    — Líder: {{ c.lider.username|default:"(Sin líder)" }}
+                    — ({{ c.asignaciones.count }} trabajadores)
+                    <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-outline-primary ms-2">Ver</a>
+                    <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-outline-secondary ms-2">Editar</a>
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
 {% endblock %}

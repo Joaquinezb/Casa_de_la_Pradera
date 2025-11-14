@@ -42,7 +42,13 @@ def panel_proyectos(request):
             'cuadrillas': cuadrillas
         })
 
-    return render(request, 'panel.html', {'data': data})
+    # Mostrar también cuadrillas que no están asignadas a ningún proyecto
+    cuadrillas_sin_proyecto = Cuadrilla.objects.filter(proyecto__isnull=True)
+
+    return render(request, 'panel.html', {
+        'data': data,
+        'cuadrillas_sin_proyecto': cuadrillas_sin_proyecto
+    })
 
 @login_required
 @user_passes_test(es_jefe)

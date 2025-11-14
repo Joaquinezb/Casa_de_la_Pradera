@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_tags %}
 {% block content %}
 
 <h2>Editar Cuadrilla: {{ cuadrilla.nombre }}</h2>
@@ -22,6 +23,16 @@
         </select>
     </div>
 
+    <div class="mb-3">
+        <label>Proyecto asignado (opcional):</label>
+        <select name="proyecto">
+            <option value="">-- Ninguno --</option>
+            {% for p in proyectos %}
+                <option value="{{ p.id }}" {% if cuadrilla.proyecto and p.id == cuadrilla.proyecto.id %}selected{% endif %}>{{ p.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
     <h4>Trabajadores y Roles asignados</h4>
     <p>Selecciona o desmarca los trabajadores que pertenecerán a la cuadrilla y su respectivo rol.</p>
 
@@ -36,7 +47,7 @@
         </thead>
         <tbody>
             {% for t in trabajadores %}
-                {% with asignacion=asignaciones|get_item:t.id %}
+                {% with asignacion=asignaciones|get_asignacion:t.id %}
                 <tr>
                     <td>
                         <input type="checkbox" name="trabajadores" value="{{ t.id }}"
