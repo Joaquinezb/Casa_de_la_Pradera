@@ -1,0 +1,35 @@
+<form method="get">
+    <input type="text" name="especialidad" placeholder="Especialidad" value="{{ request.GET.especialidad }}">
+    <select name="estado">
+        <option value="">-- Estado --</option>
+        <option value="disponible">Disponible</option>
+        <option value="asignado">Asignado</option>
+        <option value="vacaciones">Vacaciones</option>
+        <option value="licencia">Licencia</option>
+    </select>
+    <input type="number" name="valoracion" placeholder="Años de experiencia mínimo" value="{{ request.GET.valoracion }}">
+    <button>Filtrar</button>
+</form>
+
+<table class="table table-bordered">
+    <tr>
+        <th>Nombre</th>
+        <th>Especialidad</th>
+        <th>Disponibilidad</th>
+        <th>Certificaciones</th>
+        <th>Acciones</th>
+    </tr>
+
+    {% for t in trabajadores %}
+    <tr>
+        <td>{{ t.nombre }} {{ t.apellido }}</td>
+        <td>{{ t.especialidad|default:"—" }}</td>
+        <td>{{ t.perfil.estado_efectivo }}</td>
+        <td>{{ t.user.certificaciones.all|length }}</td>
+        <td>
+            <a href="{% url 'personal:editar_estado_trabajador' t.id %}" class="btn btn-sm btn-warning">Estado</a>
+            <a href="{% url 'personal:detalle_cuadrilla' t.id %}" class="btn btn-sm btn-info">Detalle</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>

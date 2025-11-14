@@ -36,6 +36,12 @@ urlpatterns = [
     name='editar_estado_trabajador'
     ),
 
+    path(
+    'trabajador/<int:trabajador_id>/detalle/',
+    views.detalle_trabajador,
+    name='detalle_trabajador'
+    ),
+
 
     # ============================================================
     # (Opcional) Cambio de contraseña personalizado para trabajadores

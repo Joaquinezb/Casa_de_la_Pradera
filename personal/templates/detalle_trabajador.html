@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load custom_tags %}
+{% block content %}
+
+<h2>Ficha del Trabajador</h2>
+
+<hr>
+
+<h3>{{ trabajador.nombre }} {{ trabajador.apellido }}</h3>
+<p><strong>RUT:</strong> {{ trabajador.rut }}</p>
+<p><strong>Email:</strong> {{ trabajador.email }}</p>
+<p><strong>Teléfono:</strong> {{ trabajador.telefono }}</p>
+<p><strong>Dirección:</strong> {{ trabajador.direccion|default:"—" }}</p>
+<p><strong>Especialidad:</strong> {{ perfil.especialidad|default:"—" }}</p>
+<p><strong>Disponibilidad actual:</strong> {{ disponibilidad }}</p>
+
+<a href="{% url 'personal:editar_estado_trabajador' trabajador.id %}" class="btn btn-warning mt-2">
+    Cambiar estado manual
+</a>
+
+<hr>
+
+<h3>Certificaciones</h3>
+{% if certificaciones %}
+<ul>
+    {% for c in certificaciones %}
+        <li>
+            <strong>{{ c.nombre }}</strong> 
+            — emitida: {{ c.fecha_emision }}
+            {% if c.fecha_expiracion %} — vence: {{ c.fecha_expiracion }}{% endif %}
+            {% if c.archivo %}
+                — <a href="{{ c.archivo.url }}" target="_blank">PDF</a>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>— No tiene certificaciones registradas.</p>
+{% endif %}
+
+<hr>
+
+<h3>Competencias</h3>
+{% if competencias %}
+<ul>
+    {% for comp in competencias %}
+        <li>
+            {{ comp.nombre }}
+            {% if comp.certificada %}(Certificada){% endif %}
+        </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>— No tiene competencias registradas.</p>
+{% endif %}
+
+<hr>
+
+<h3>Experiencia</h3>
+{% if experiencias %}
+<ul>
+    {% for exp in experiencias %}
+        <li>
+            {% if exp.proyecto %}
+                Proyecto interno: {{ exp.proyecto.nombre }} — {{ exp.calificacion }}
+            {% else %}
+                Externo: {{ exp.proyecto_externo }} ({{ exp.empresa_externa }}) — {{ exp.calificacion }}
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>— Sin experiencia registrada.</p>
+{% endif %}
+
+<hr>
+
+<h3>Historial de Asignaciones</h3>
+{% if asignaciones %}
+<table class="table table-bordered">
+    <tr>
+        <th>Cuadrilla</th>
+        <th>Proyecto</th>
+        <th>Rol</th>
+    </tr>
+
+    {% for a in asignaciones %}
+    <tr>
+        <td>{{ a.cuadrilla.nombre }}</td>
+        <td>
+            {% if a.cuadrilla.proyecto %}
+                {{ a.cuadrilla.proyecto.nombre }}
+            {% else %}
+                —
+            {% endif %}
+        </td>
+        <td>
+            {% if a.rol %}
+                {{ a.rol.nombre }}
+            {% else %}
+                Sin rol
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No tiene asignaciones en cuadrillas.</p>
+{% endif %}
+
+<hr>
+
+<h3>Proyectos Participados</h3>
+{% if proyectos %}
+<ul>
+    {% for p in proyectos %}
+        <li>{{ p.nombre }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>— No tiene proyectos asociados.</p>
+{% endif %}
+
+<hr>
+
+<a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-3">Volver</a>
+
+{% endblock %}

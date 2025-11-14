@@ -35,106 +35,103 @@
             <th>Competencias</th>
             <th>Certificaciones</th>
             <th>Experiencia</th>
+            <th>Estado</th>
+            <th>Ficha</th>
         </tr>
     </thead>
 
     <tbody>
+
     {% for a in asignaciones %}
-        {% with user=a.trabajador %}
-            {% with perfil=perfil_map|get_item:user.id %}
-                <tr>
+        {% with user=a.trabajador perfil=perfil_map|get_item:user.id %}
+        <tr>
+            <td>{{ user.first_name }} {{ user.last_name }} ({{ user.username }})</td>
 
-                    <!-- Nombre -->
-                    <td>{{ user.first_name }} {{ user.last_name }} ({{ user.username }})</td>
+            <td>
+                {% if a.rol %}
+                    {{ a.rol.nombre }}
+                {% else %}
+                    Sin rol
+                {% endif %}
+            </td>
 
-                    <!-- Rol operativo -->
-                    <td>
-                        {% if a.rol %}
-                            {{ a.rol.nombre }}
-                        {% else %}
-                            Sin rol
-                        {% endif %}
-                    </td>
+            <td>
+                {% if perfil %}
+                    {{ perfil.estado_efectivo }}
+                {% else %}
+                    Sin perfil
+                {% endif %}
+            </td>
 
-                    <!-- Disponibilidad -->
-                    <td>
-                        {% if perfil %}
-                            {{ perfil.estado_efectivo }}
-                        {% else %}
-                            <em>Sin perfil</em>
-                        {% endif %}
-                    </td>
+            <td>
+                {% if perfil and perfil.especialidad %}
+                    {{ perfil.especialidad }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
 
-                    <!-- Especialidad -->
-                    <td>
-                        {% if perfil and perfil.especialidad %}
-                            {{ perfil.especialidad }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
+            <td>
+                {% if comp_map|get_item:user.id %}
+                    <ul>
+                        {% for c in comp_map|get_item:user.id %}
+                            <li>{{ c.nombre }} {% if c.certificada %}(Certificada){% endif %}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
 
-                    <!-- Competencias -->
-                    <td>
-                        {% if comp_map|get_item:user.id %}
-                            <ul>
-                                {% for c in comp_map|get_item:user.id %}
-                                    <li>
-                                        {{ c.nombre }}
-                                        {% if c.certificada %}(Certificada){% endif %}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
+            <td>
+                {% if cert_map|get_item:user.id %}
+                    <ul>
+                        {% for cert in cert_map|get_item:user.id %}
+                            <li>{{ cert.nombre }}
+                                {% if cert.archivo %}
+                                    – <a href="{{ cert.archivo.url }}" target="_blank">PDF</a>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
 
-                    <!-- Certificaciones -->
-                    <td>
-                        {% if cert_map|get_item:user.id %}
-                            <ul>
-                                {% for cert in cert_map|get_item:user.id %}
-                                    <li>
-                                        {{ cert.nombre }}
-                                        {% if cert.archivo %}
-                                            – <a href="{{ cert.archivo.url }}" target="_blank">PDF</a>
-                                        {% endif %}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
+            <td>
+                {% if exp_map|get_item:user.id %}
+                    <ul>
+                        {% for exp in exp_map|get_item:user.id %}
+                            <li>
+                                {% if exp.proyecto %}
+                                    Proyecto interno: {{ exp.proyecto.nombre }}
+                                {% else %}
+                                    Externo: {{ exp.proyecto_externo }} ({{ exp.empresa_externa }})
+                                {% endif %}
+                                – {{ exp.calificacion }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
 
-                    <!-- Experiencia -->
-                    <td>
-                        {% if exp_map|get_item:user.id %}
-                            <ul>
-                                {% for exp in exp_map|get_item:user.id %}
-                                    <li>
-                                        {% if exp.proyecto %}
-                                            Proyecto interno: {{ exp.proyecto.nombre }}
-                                        {% else %}
-                                            Externo: {{ exp.proyecto_externo }} ({{ exp.empresa_externa }})
-                                        {% endif %}
-                                        – {{ exp.calificacion }}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{% url 'personal:editar_estado_trabajador' a.trabajador.trabajador_profile.id %}"
-                            class="btn btn-sm btn-warning">Cambiar estado</a>
-                    </td>
-                </tr>
-            {% endwith %}
+            <td>
+                <a href="{% url 'personal:editar_estado_trabajador' user.trabajador_profile.id %}"
+                   class="btn btn-sm btn-warning">Estado</a>
+            </td>
+
+            <td>
+                <a href="{% url 'personal:detalle_trabajador' user.trabajador_profile.id %}"
+                   class="btn btn-sm btn-info">Ficha</a>
+            </td>
+
+        </tr>
         {% endwith %}
     {% endfor %}
+
     </tbody>
 
 </table>
@@ -142,7 +139,7 @@
 <p>No hay trabajadores asignados.</p>
 {% endif %}
 
-<a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-3">Volver al Panel</a>
-<a href="{% url 'personal:editar_cuadrilla' cuadrilla.id %}" class="btn btn-primary mt-3 ms-2">Editar cuadrilla</a>
+<a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-3">Volver</a>
+<a href="{% url 'personal:editar_cuadrilla' cuadrilla.id %}" class="btn btn-primary mt-3 ms-2">Editar</a>
 
 {% endblock %}
