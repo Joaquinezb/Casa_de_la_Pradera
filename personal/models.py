@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from proyectos.models import Proyecto
 
 class Cuadrilla(models.Model):
@@ -129,3 +131,194 @@ class Experiencia(models.Model):
         if self.proyecto:
             return f"{self.trabajador.username} - {self.proyecto.nombre}"
         return f"{self.trabajador.username} - {self.proyecto_externo or 'Experiencia externa'}"
+
+
+# --- Nuevo modelo: Trabajador (entidad principal) ---
+def rut_valido(value):
+    """Valida RUT chileno con DV. Acepta formatos con o sin puntos y guión.
+
+    Lógica: limpiar caracteres no alfanuméricos, separar cuerpo y dv,
+    calcular dv esperado y comparar.
+    """
+    rut = ''.join(ch for ch in str(value) if ch.isalnum())
+    if len(rut) < 2:
+        raise ValidationError('RUT inválido')
+    cuerpo = rut[:-1]
+    dv = rut[-1].upper()
+
+    try:
+        reversed_digits = map(int, reversed(cuerpo))
+    except Exception:
+        raise ValidationError('RUT inválido')
+
+    factors = [2, 3, 4, 5, 6, 7]
+    s = 0
+    factor_index = 0
+    for d in reversed_digits:
+        s += d * factors[factor_index]
+        factor_index = (factor_index + 1) % len(factors)
+
+    modulus = 11 - (s % 11)
+    if modulus == 11:
+        dv_expected = '0'
+    elif modulus == 10:
+        dv_expected = 'K'
+    else:
+        dv_expected = str(modulus)
+
+    if dv != dv_expected:
+        raise ValidationError('Dígito verificador (DV) inválido')
+
+
+class Trabajador(models.Model):
+    TIPO_CHOICES = [
+        ('trabajador', 'Trabajador'),
+        ('lider', 'Líder'),
+        ('jefe', 'Jefe'),
+    ]
+
+    ESTADO_CHOICES = [
+        ('disponible', 'Disponible'),
+        ('asignado', 'Asignado'),
+        ('vacaciones', 'Vacaciones'),
+        ('licencia', 'Licencia'),
+        ('inactivo', 'Inactivo'),
+    ]
+
+    # Datos personales
+    rut = models.CharField(max_length=20, unique=True, validators=[rut_valido])
+    nombre = models.CharField(max_length=100)
+    apellido = models.CharField(max_length=100)
+    email = models.EmailField()
+    telefono = models.CharField(max_length=30, blank=True, null=True)
+    direccion = models.CharField(max_length=255, blank=True, null=True)
+    fecha_nacimiento = models.DateField(null=True, blank=True)
+
+    # Datos laborales
+    tipo_trabajador = models.CharField(max_length=20, choices=TIPO_CHOICES, default='trabajador')
+    especialidad = models.CharField(max_length=100, blank=True, null=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='disponible')
+    fecha_ingreso = models.DateField(null=True, blank=True)
+    anos_experiencia = models.PositiveIntegerField(default=0)
+
+    # Relación opcional con Django User
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='trabajador_profile')
+
+    activo = models.BooleanField(default=True)
+
+    # Indica si el password es inicial (a cambiar en primer login)
+    password_inicial = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Trabajador'
+        verbose_name_plural = 'Trabajadores'
+
+    def __str__(self):
+        return f"{self.rut} - {self.nombre} {self.apellido}"
+
+    def clean_rut(self):
+        # Devuelve el rut limpio para username: sin puntos ni guión
+        return ''.join(ch for ch in str(self.rut) if ch.isalnum())
+
+    def crear_usuario(self):
+        """
+        Crea automáticamente un User de Django si no existe y retorna el objeto User.
+
+        IMPORTANTE: este método NO debe realizar commits en la instancia Trabajador
+        (no llama a self.save()) para evitar loops con signals. El caller (signal
+        minimal) es responsable de asociar el user al trabajador con una actualización
+        a nivel de queryset.
+        """
+        if self.user:
+            return self.user
+
+        username = self.clean_rut()
+        from django.contrib.auth.models import Group
+
+        user = User.objects.filter(username=username).first()
+        if not user:
+            user = User.objects.create_user(username=username, password=self.rut)
+
+        # sincronizar datos
+        user.email = self.email
+        user.first_name = self.nombre
+        user.last_name = self.apellido
+        user.is_active = self.activo
+        user.save()
+
+        # Asignar grupos mínimos (el grupo 'Trabajador' siempre debe existir)
+        if self.tipo_trabajador == 'lider':
+            group = Group.objects.filter(name='LiderCuadrilla').first()
+            if group:
+                user.groups.add(group)
+        elif self.tipo_trabajador == 'jefe':
+            group = Group.objects.filter(name='JefeProyecto').first()
+            if group:
+                user.groups.add(group)
+
+        return user
+
+    def sincronizar_a_user(self):
+        """Sincroniza campos básicos al User asociado si existe."""
+        if not self.user:
+            return
+        u = self.user
+        u.email = self.email
+        u.first_name = self.nombre
+        u.last_name = self.apellido
+        u.is_active = self.activo
+        u.save()
+
+
+# Modelos relacionados específicos para Trabajador
+class CompetenciaTrabajador(models.Model):
+    NIVEL_CHOICES = [
+        ('basico', 'Básico'),
+        ('intermedio', 'Intermedio'),
+        ('avanzado', 'Avanzado'),
+        ('experto', 'Experto'),
+    ]
+    trabajador = models.ForeignKey(Trabajador, on_delete=models.CASCADE, related_name='competencias')
+    nombre = models.CharField(max_length=100)
+    nivel = models.CharField(max_length=20, choices=NIVEL_CHOICES, default='basico')
+    fecha_adquisicion = models.DateField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('trabajador', 'nombre')
+
+    def __str__(self):
+        return f"{self.nombre} ({self.trabajador.rut})"
+
+
+class CertificacionTrabajador(models.Model):
+    trabajador = models.ForeignKey(Trabajador, on_delete=models.CASCADE, related_name='certificaciones_trabajador')
+    nombre = models.CharField(max_length=150)
+    entidad = models.CharField(max_length=150, blank=True, null=True)
+    archivo = models.FileField(upload_to='certificaciones/', blank=True, null=True)
+    fecha_emision = models.DateField()
+    fecha_expiracion = models.DateField(null=True, blank=True)
+
+    def vigente(self):
+        if not self.fecha_expiracion:
+            return True
+        from django.utils import timezone
+        return self.fecha_expiracion >= timezone.localdate()
+
+    def __str__(self):
+        return f"{self.nombre} - {self.trabajador.rut}"
+
+
+class ExperienciaTrabajador(models.Model):
+    trabajador = models.ForeignKey(Trabajador, on_delete=models.CASCADE, related_name='experiencias_trabajador')
+    proyecto = models.CharField(max_length=150, blank=True, null=True)
+    empresa_externa = models.CharField(max_length=150, blank=True, null=True)
+    rol = models.CharField(max_length=100, blank=True, null=True)
+    fecha_inicio = models.DateField(null=True, blank=True)
+    fecha_termino = models.DateField(null=True, blank=True)
+    calificacion = models.CharField(max_length=20, choices=[('no_recomendado','No recomendado'),('recomendado','Recomendado'),('muy_recomendado','Muy recomendado')], blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.trabajador.rut} - {self.proyecto or self.empresa_externa or 'Experiencia'}"

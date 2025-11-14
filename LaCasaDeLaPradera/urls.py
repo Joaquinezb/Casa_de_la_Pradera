@@ -17,6 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from personal.views import TrabajadorPasswordChangeView
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -24,6 +25,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),              # Página principal y dashboard
     path('usuarios/', include('usuarios.urls')),
+    # Endpoint personalizado para cambio de password (sobrescribe la ruta)
+    path('accounts/password_change/', TrabajadorPasswordChangeView.as_view(), name='password_change'),
+    # Endpoints de autenticación (login/logout/password change)
+    path('accounts/', include('django.contrib.auth.urls')),
     path('personal/', include('personal.urls')),
     path('proyectos/', include('proyectos.urls')),
     path('tareas/', include('tareas.urls')),
