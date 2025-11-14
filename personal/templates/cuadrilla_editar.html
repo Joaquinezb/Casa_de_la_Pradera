@@ -51,7 +51,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        <select name="roles">
+                        <select name="roles_{{ t.id }}">
                             <option value="">-- Rol --</option>
                             {% for r in roles %}
                                 <option value="{{ r.id }}"

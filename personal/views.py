@@ -20,7 +20,6 @@ def crear_cuadrilla(request):
         proyecto_id = request.POST.get('proyecto')
         lider_id = request.POST.get('lider')
         seleccionados = request.POST.getlist('trabajadores')
-        roles_seleccionados = request.POST.getlist('roles')
 
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
         lider = User.objects.filter(id=lider_id).first()
@@ -31,9 +30,18 @@ def crear_cuadrilla(request):
             lider=lider
         )
 
-        for i, trabajador_id in enumerate(seleccionados):
+        # Para cada trabajador seleccionado, leemos el rol específico enviado
+        # en el campo `roles_<trabajador_id>` para evitar desalineación de listas
+        for trabajador_id in seleccionados:
             trabajador = User.objects.get(id=trabajador_id)
-            rol = Rol.objects.filter(id=roles_seleccionados[i]).first()
+            role_field = request.POST.get(f'roles_{trabajador_id}')
+            rol = None
+            if role_field:
+                try:
+                    rol = Rol.objects.filter(id=int(role_field)).first()
+                except (ValueError, TypeError):
+                    rol = None
+
             Asignacion.objects.create(
                 trabajador=trabajador,
                 cuadrilla=cuadrilla,
@@ -61,15 +69,21 @@ def editar_cuadrilla(request, cuadrilla_id):
         lider_id = request.POST.get('lider')
         cuadrilla.lider = User.objects.filter(id=lider_id).first()
         cuadrilla.save()
-
+        # Reemplazamos asignaciones existentes por las nuevas seleccionadas
         Asignacion.objects.filter(cuadrilla=cuadrilla).delete()
 
         seleccionados = request.POST.getlist('trabajadores')
-        roles_seleccionados = request.POST.getlist('roles')
 
-        for i, trabajador_id in enumerate(seleccionados):
+        for trabajador_id in seleccionados:
             trabajador = User.objects.get(id=trabajador_id)
-            rol = Rol.objects.filter(id=roles_seleccionados[i]).first()
+            role_field = request.POST.get(f'roles_{trabajador_id}')
+            rol = None
+            if role_field:
+                try:
+                    rol = Rol.objects.filter(id=int(role_field)).first()
+                except (ValueError, TypeError):
+                    rol = None
+
             Asignacion.objects.create(
                 trabajador=trabajador,
                 cuadrilla=cuadrilla,
