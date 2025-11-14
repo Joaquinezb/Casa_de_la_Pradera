@@ -25,7 +25,7 @@
         <select name="lider">
             <option value="">-- Ninguno --</option>
             {% for t in trabajadores %}
-            <option value="{{ t.id }}">{{ t.username }}</option>
+            <option value="{% if t.user %}{{ t.user.id }}{% endif %}">{{ t.nombre }} {{ t.apellido }}{% if not t.user %} (sin user){% endif %}</option>
             {% endfor %}
         </select>
     </div>
@@ -43,9 +43,9 @@
             {% for t in trabajadores %}
             <tr>
                 <td>
-                    <input type="checkbox" name="trabajadores" value="{{ t.id }}">
+                    <input class="trabajador-checkbox" type="checkbox" name="trabajadores" value="{{ t.id }}">
                 </td>
-                <td>{{ t.username }}</td>
+                <td>{{ t.nombre }} {{ t.apellido }} ({{ t.rut }})</td>
                 <td>
                     <select name="roles_{{ t.id }}">
                         <option value="">-- Rol --</option>
@@ -62,5 +62,26 @@
     <button type="submit" class="btn btn-primary mt-2">Guardar Cuadrilla</button>
     <a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-2">Cancelar</a>
 </form>
+
+<script>
+(function(){
+    function toggleRoleSelect(id){
+        var chk = document.querySelector('input.trabajador-checkbox[value="'+id+'"]');
+        var sel = document.querySelector('select[name="roles_'+id+'"]');
+        if(!sel || !chk) return;
+        sel.disabled = !chk.checked;
+    }
+
+    function init(){
+        document.querySelectorAll('input.trabajador-checkbox').forEach(function(chk){
+            var id = chk.value;
+            chk.addEventListener('change', function(){ toggleRoleSelect(id); });
+            toggleRoleSelect(id);
+        });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
 
 {% endblock %}

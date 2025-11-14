@@ -25,7 +25,9 @@ def crear_cuadrilla(request):
         seleccionados = request.POST.getlist('trabajadores')
 
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
-        lider = User.objects.filter(id=lider_id).first()
+        lider = None
+        if lider_id:
+            lider = User.objects.filter(id=lider_id).first()
 
         cuadrilla = Cuadrilla.objects.create(
             nombre=nombre,
@@ -85,7 +87,9 @@ def editar_cuadrilla(request, cuadrilla_id):
         # Actualizar datos básicos
         cuadrilla.nombre = request.POST.get('nombre')
         lider_id = request.POST.get('lider')
-        cuadrilla.lider = User.objects.filter(id=lider_id).first()
+        cuadrilla.lider = None
+        if lider_id:
+            cuadrilla.lider = User.objects.filter(id=lider_id).first()
 
         # Permitir reasignar la cuadrilla a otro proyecto del jefe
         proyecto_id = request.POST.get('proyecto')
