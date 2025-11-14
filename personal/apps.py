@@ -8,7 +8,7 @@ class PersonalConfig(AppConfig):
     def ready(self):
         # importar signals para que se registren
         try:
-            import personal.signals  # noqa: F401
+            import personal.signals 
             # Asegurar que los grupos necesarios existen. Mantener simple y seguro.
             from django.contrib.auth.models import Group
             Group.objects.get_or_create(name='Trabajador')

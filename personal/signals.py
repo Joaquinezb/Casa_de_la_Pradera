@@ -1,7 +1,8 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Trabajador
-
+from django.contrib.auth.models import User
+from .models import TrabajadorPerfil
 
 @receiver(post_save, sender=Trabajador)
 def crear_usuario_automatico(sender, instance: Trabajador, created, **kwargs):
@@ -33,3 +34,18 @@ def sincronizar_usuario(sender, instance: Trabajador, **kwargs):
         instance.sincronizar_a_user()
     except Exception:
         pass
+
+@receiver(post_save, sender=User)
+def crear_perfil_trabajador(sender, instance, created, **kwargs):
+    """
+    Crea un TrabajadorPerfil automáticamente cuando se crea un User
+    que está vinculado a un Trabajador.
+    """
+    # Si ya tiene perfil → no hacer nada
+    if hasattr(instance, "perfil_trabajador"):
+        return
+
+    # Solo crear perfil si este User pertenece a un Trabajador
+    # evita crear perfil para usuarios admin o staff
+    if hasattr(instance, "trabajador_profile"):
+        TrabajadorPerfil.objects.create(user=instance)

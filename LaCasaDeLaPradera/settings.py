@@ -39,10 +39,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "core",
     "usuarios",
-    "personal",
     "proyectos",
     "tareas",
     "recursos",
+    'personal.apps.PersonalConfig',
     ]
 
 MIDDLEWARE = [
