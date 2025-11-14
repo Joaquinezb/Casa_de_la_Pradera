@@ -4,11 +4,11 @@ from proyectos.models import Proyecto
 
 class Cuadrilla(models.Model):
     nombre = models.CharField(max_length=100)
-    proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='cuadrillas')
+    proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='cuadrillas', null=True, blank=True)
     lider = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='cuadrillas_lideradas')
 
     def __str__(self):
-        return f"{self.nombre} ({self.proyecto.nombre})"
+        return f"{self.nombre} ({self.proyecto.nombre if self.proyecto else 'Sin proyecto'})"
 
 
 class Rol(models.Model):
