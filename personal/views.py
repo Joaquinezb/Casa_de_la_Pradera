@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from proyectos.models import Proyecto
-from .models import Cuadrilla, Asignacion, Rol
+from .models import Cuadrilla, Asignacion, Rol, TrabajadorPerfil, Competencia, Certificacion, Experiencia
 
 def es_jefe(user):
     return user.groups.filter(name='JefeProyecto').exists()
@@ -83,4 +83,44 @@ def editar_cuadrilla(request, cuadrilla_id):
         'trabajadores': trabajadores,
         'roles': roles,
         'asignaciones': cuadrilla.asignaciones.all()
+    })
+
+
+@login_required
+@user_passes_test(es_jefe)
+def detalle_cuadrilla(request, cuadrilla_id):
+    cuadrilla = get_object_or_404(Cuadrilla, id=cuadrilla_id)
+    asignaciones = Asignacion.objects.filter(cuadrilla=cuadrilla)
+
+    # Extraer los users involucrados
+    trabajadores = [a.trabajador for a in asignaciones]
+
+    # Mapear perfiles, competencias, certificaciones y experiencias
+    perfiles = TrabajadorPerfil.objects.filter(user__in=trabajadores)
+    competencias = Competencia.objects.filter(trabajador__in=trabajadores)
+    certificaciones = Certificacion.objects.filter(trabajador__in=trabajadores)
+    experiencias = Experiencia.objects.filter(trabajador__in=trabajadores)
+
+    # Creamos estructuras fáciles de acceder desde la plantilla
+    perfil_map = {p.user_id: p for p in perfiles}
+
+    comp_map = {}
+    for c in competencias:
+        comp_map.setdefault(c.trabajador_id, []).append(c)
+
+    cert_map = {}
+    for c in certificaciones:
+        cert_map.setdefault(c.trabajador_id, []).append(c)
+
+    exp_map = {}
+    for e in experiencias:
+        exp_map.setdefault(e.trabajador_id, []).append(e)
+
+    return render(request, 'detalle_cuadrilla.html', {
+        'cuadrilla': cuadrilla,
+        'asignaciones': asignaciones,
+        'perfil_map': perfil_map,
+        'comp_map': comp_map,
+        'cert_map': cert_map,
+        'exp_map': exp_map,
     })

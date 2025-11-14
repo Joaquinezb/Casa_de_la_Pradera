@@ -18,9 +18,13 @@
             <ul>
                 {% for c in item.cuadrillas %}
                     <li>
-                        {{ c.nombre }} — 
-                        Líder: {{ c.lider.username|default:"(Sin líder)" }}  
-                        ({{ c.trabajadores.count }} trabajadores)
+                        <strong>{{ c.nombre }}</strong>
+                        — Líder: {{ c.lider.username|default:"(Sin líder)" }}
+                        — ({{ c.trabajadores.count }} trabajadores)
+
+                        <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-outline-primary ms-2">
+                            Ver cuadrilla
+                        </a>
                     </li>
                 {% endfor %}
             </ul>

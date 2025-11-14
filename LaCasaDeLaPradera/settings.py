@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -132,3 +132,8 @@ LOGIN_REDIRECT_URL = '/dashboard/'          # destino tras login exitoso
 LOGOUT_REDIRECT_URL = '/usuarios/login/'    # a dónde va tras cerrar sesión
 
 app_name = 'tareas'
+
+# Seccion para el almacenamiento de archivos subidos por los usuarios (PDF certificaciones)
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

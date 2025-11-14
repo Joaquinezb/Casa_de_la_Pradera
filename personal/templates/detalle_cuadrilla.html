@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load custom_tags %}
+{% block content %}
+
+<h2>Detalle de Cuadrilla: {{ cuadrilla.nombre }}</h2>
+
+<p><strong>Proyecto:</strong> {{ cuadrilla.proyecto.nombre }}</p>
+
+<p><strong>Líder:</strong>
+    {% if cuadrilla.lider %}
+        {{ cuadrilla.lider.username }}
+    {% else %}
+        <em>Sin líder asignado</em>
+    {% endif %}
+</p>
+
+<hr>
+
+<h3>Trabajadores asignados</h3>
+
+{% if asignaciones %}
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Trabajador</th>
+            <th>Rol Operativo</th>
+            <th>Disponibilidad</th>
+            <th>Especialidad</th>
+            <th>Competencias</th>
+            <th>Certificaciones</th>
+            <th>Experiencia</th>
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for a in asignaciones %}
+        {% with user=a.trabajador %}
+            {% with perfil=perfil_map|get_item:user.id %}
+            <tr>
+                <!-- Nombre del trabajador -->
+                <td>{{ user.username }}</td>
+
+                <!-- Rol operativo dentro de la cuadrilla -->
+                <td>{{ a.rol.nombre }}</td>
+
+                <!-- Disponibilidad -->
+                <td>
+                    {% if perfil %}
+                        {{ perfil.estado_efectivo }}
+                    {% else %}
+                        <em>Sin perfil</em>
+                    {% endif %}
+                </td>
+
+                <!-- Especialidad -->
+                <td>
+                    {% if perfil and perfil.especialidad %}
+                        {{ perfil.especialidad }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
+                <!-- Competencias -->
+                <td>
+                    {% if comp_map|get_item:user.id %}
+                        <ul>
+                            {% for c in comp_map|get_item:user.id %}
+                                <li>
+                                    {{ c.nombre }}
+                                    {% if c.certificada %}(Certificada){% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
+                <!-- Certificaciones -->
+                <td>
+                    {% if cert_map|get_item:user.id %}
+                        <ul>
+                            {% for cert in cert_map|get_item:user.id %}
+                                <li>
+                                    {{ cert.nombre }}
+                                    {% if cert.archivo %}
+                                        — <a href="{{ cert.archivo.url }}" target="_blank">PDF</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
+                <!-- Experiencia -->
+                <td>
+                    {% if exp_map|get_item:user.id %}
+                        <ul>
+                            {% for exp in exp_map|get_item:user.id %}
+                                <li>
+                                    {% if exp.proyecto %}
+                                        Proyecto interno: {{ exp.proyecto.nombre }}
+                                    {% else %}
+                                        Externo: {{ exp.proyecto_externo }} ({{ exp.empresa_externa }})
+                                    {% endif %}
+                                    — {{ exp.calificacion }}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
+            </tr>
+            {% endwith %}
+        {% endwith %}
+    {% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+<p>No hay trabajadores asignados.</p>
+{% endif %}
+
+<a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-3">Volver al Panel</a>
+
+{% endblock %}
