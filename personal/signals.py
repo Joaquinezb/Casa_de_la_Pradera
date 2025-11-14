@@ -52,7 +52,7 @@ def sincronizar_usuario(sender, instance: Trabajador, **kwargs):
     # -----------------------------------
     # 2. Sincronizar grupo según tipo
     # -----------------------------------
-    tipo = (instance.tipo or "").strip().lower()
+    tipo = (instance.tipo_trabajador or "").strip().lower()
 
     mapping = {
         "jefe": "JefeProyecto",
@@ -66,11 +66,10 @@ def sincronizar_usuario(sender, instance: Trabajador, **kwargs):
     if grupo_nombre:
         try:
             grupo = Group.objects.get(name=grupo_nombre)
-            user.groups.clear()
-            user.groups.add(grupo)
+            instance.user.groups.clear()
+            instance.user.groups.add(grupo)
         except Group.DoesNotExist:
             pass
-
 
 # ============================================================
 # 3. Crear perfil en TrabajadorPerfil al crear un User
