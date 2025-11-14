@@ -35,30 +35,34 @@ def crear_cuadrilla(request):
 
     roles = Rol.objects.all()
 
-    # === Atributos dinámicos ===
+    # =============================================================
+    # Atributos dinámicos para la tabla y los filtros
+    # =============================================================
     for t in trabajadores:
 
-        # 1. ¿Está ocupado?
+        # 1) Está ocupado si tiene una asignación en cualquier cuadrilla
         if t.user:
             t.ocupado = Asignacion.objects.filter(trabajador=t.user).exists()
         else:
             t.ocupado = False
 
-        # 2. Perfil opcional
+        # 2) Perfil opcional (si existe)
         perfil = TrabajadorPerfil.objects.filter(user=t.user).first() if t.user else None
 
-        # 3. Estado real (disponible / asignado / vacaciones / licencia)
+        # 3) Estado lógico
         if perfil:
             t.estado_real = perfil.estado_efectivo
         else:
-            t.estado_real = t.estado  # del modelo Trabajador
+            t.estado_real = t.estado  # estado simple del modelo Trabajador
 
-        # 4. Tiene certificaciones
+        # 4) Certificaciones
         certs = CertificacionTrabajador.objects.filter(trabajador=t)
         t.certificacion_lista = [c.nombre for c in certs]
         t.tiene_certificaciones = certs.exists()
 
-    # Para filtros
+    # =============================================================
+    # Filtros dinámicos
+    # =============================================================
     especialidades = (
         Trabajador.objects.exclude(especialidad__isnull=True)
         .exclude(especialidad__exact="")
@@ -70,6 +74,9 @@ def crear_cuadrilla(request):
         CertificacionTrabajador.objects.values_list("nombre", flat=True).distinct()
     )
 
+    # =============================================================
+    # PROCESAR FORMULARIO
+    # =============================================================
     if request.method == "POST":
 
         nombre = request.POST.get("nombre")
@@ -85,19 +92,28 @@ def crear_cuadrilla(request):
             lider=User.objects.filter(id=lider_id).first() if lider_id else None
         )
 
+        # ---------------------------------------------------------
+        # Procesar cada trabajador seleccionado
+        # ---------------------------------------------------------
         for trabajador_id in seleccionados:
+
             trabajador = Trabajador.objects.get(id=trabajador_id)
 
-            # Crear user si no existe
+            # Crear user si no tiene
             if not trabajador.user:
                 user = trabajador.crear_usuario()
                 Trabajador.objects.filter(pk=trabajador.pk).update(user_id=user.id)
                 trabajador.user = user
 
-            # Rol
+            # === ROL → Protección para evitar errores ===
             rol_id = request.POST.get(f"roles_{trabajador_id}")
-            rol = Rol.objects.filter(id=rol_id).first() if rol_id else None
 
+            if rol_id and rol_id.isdigit():
+                rol = Rol.objects.filter(id=int(rol_id)).first()
+            else:
+                rol = None
+
+            # Crear asignación
             Asignacion.objects.create(
                 trabajador=trabajador.user,
                 cuadrilla=cuadrilla,
@@ -106,6 +122,9 @@ def crear_cuadrilla(request):
 
         return redirect("personal:detalle_cuadrilla", cuadrilla.id)
 
+    # =============================================================
+    # RENDER
+    # =============================================================
     return render(request, "cuadrilla_form.html", {
         "proyectos": proyectos,
         "trabajadores": trabajadores,
@@ -127,11 +146,13 @@ def editar_cuadrilla(request, cuadrilla_id):
     roles = Rol.objects.all()
     proyectos = Proyecto.objects.filter(jefe=request.user)
 
+    # Mapa: id_user -> asignación
     asignaciones_actuales = {
         str(a.trabajador.id): a
         for a in Asignacion.objects.filter(cuadrilla=cuadrilla)
     }
 
+    # Ligamos asignaciones al objeto trabajador
     for t in trabajadores:
         if t.user and str(t.user.id) in asignaciones_actuales:
             t.asignacion = asignaciones_actuales[str(t.user.id)]
@@ -140,22 +161,48 @@ def editar_cuadrilla(request, cuadrilla_id):
 
     if request.method == "POST":
 
+        # -------------------------
+        # Nombre
+        # -------------------------
         cuadrilla.nombre = request.POST.get("nombre")
 
+        # -------------------------
+        # LÍDER (validación segura)
+        # -------------------------
         lider_id = request.POST.get("lider")
-        cuadrilla.lider = User.objects.filter(id=lider_id).first() if lider_id else None
+        if lider_id and lider_id.isdigit():
+            cuadrilla.lider = User.objects.filter(id=int(lider_id)).first()
+        else:
+            cuadrilla.lider = None
 
+        # -------------------------
+        # PROYECTO (validación segura)
+        # -------------------------
         proyecto_id = request.POST.get("proyecto")
-        cuadrilla.proyecto = Proyecto.objects.filter(id=proyecto_id, jefe=request.user).first()
+        if proyecto_id and proyecto_id.isdigit():
+            cuadrilla.proyecto = Proyecto.objects.filter(
+                id=int(proyecto_id),
+                jefe=request.user
+            ).first()
+        else:
+            cuadrilla.proyecto = None
+
         cuadrilla.save()
 
+        # Lista de trabajadores seleccionados
         seleccionados = set(request.POST.getlist("trabajadores"))
+
+        # Copia de asignaciones para eliminar luego las no usadas
         restantes = asignaciones_actuales.copy()
 
-        # Actualizar o crear asignaciones
+        # ------------------------------------------------------
+        # Crear / actualizar asignaciones
+        # ------------------------------------------------------
         for trabajador_id in seleccionados:
+
             trabajador_obj = Trabajador.objects.get(id=trabajador_id)
 
+            # Crear usuario si no existe
             if not trabajador_obj.user:
                 user = trabajador_obj.crear_usuario()
                 Trabajador.objects.filter(pk=trabajador_obj.pk).update(user_id=user.id)
@@ -164,13 +211,18 @@ def editar_cuadrilla(request, cuadrilla_id):
             user = trabajador_obj.user
             clave = str(user.id)
 
+            # Rol seguro
             rol_id = request.POST.get(f"roles_{trabajador_id}")
-            rol = Rol.objects.filter(id=rol_id).first() if rol_id else None
+            if rol_id and rol_id.isdigit():
+                rol = Rol.objects.filter(id=int(rol_id)).first()
+            else:
+                rol = None
 
             if clave in restantes:
                 asign = restantes.pop(clave)
                 asign.rol = rol
                 asign.save()
+
             else:
                 Asignacion.objects.create(
                     trabajador=user,
@@ -178,7 +230,9 @@ def editar_cuadrilla(request, cuadrilla_id):
                     rol=rol
                 )
 
-        # Eliminar asignaciones quitadas
+        # ------------------------------------------------------
+        # Eliminar asignaciones no seleccionadas
+        # ------------------------------------------------------
         for asign in restantes.values():
             asign.delete()
 
@@ -190,8 +244,6 @@ def editar_cuadrilla(request, cuadrilla_id):
         "roles": roles,
         "proyectos": proyectos,
     })
-
-
 # =====================================================
 # 3. DETALLE DE CUADRILLA
 # =====================================================
