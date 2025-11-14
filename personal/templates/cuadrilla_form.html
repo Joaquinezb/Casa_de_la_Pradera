@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 {% block content %}
+
 <h2>Crear Cuadrilla</h2>
 
 <form method="post">
     {% csrf_token %}
 
     <div class="mb-3">
-        <label>Nombre de cuadrilla:</label><br>
+        <label>Nombre de la cuadrilla:</label><br>
         <input type="text" name="nombre" required>
     </div>
 
@@ -15,7 +16,7 @@
         <select name="proyecto" required>
             <option value="">-- Selecciona un proyecto --</option>
             {% for p in proyectos %}
-            <option value="{{ p.id }}">{{ p.nombre }}</option>
+                <option value="{{ p.id }}">{{ p.nombre }}</option>
             {% endfor %}
         </select>
     </div>
@@ -25,12 +26,17 @@
         <select name="lider">
             <option value="">-- Ninguno --</option>
             {% for t in trabajadores %}
-            <option value="{% if t.user %}{{ t.user.id }}{% endif %}">{{ t.nombre }} {{ t.apellido }}{% if not t.user %} (sin user){% endif %}</option>
+                {% if t.user %}
+                    <option value="{{ t.user.id }}">
+                        {{ t.nombre }} {{ t.apellido }}
+                    </option>
+                {% endif %}
             {% endfor %}
         </select>
     </div>
 
     <h4>Seleccionar trabajadores y roles</h4>
+
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -39,22 +45,28 @@
                 <th>Rol</th>
             </tr>
         </thead>
+
         <tbody>
             {% for t in trabajadores %}
-            <tr>
-                <td>
-                    <input class="trabajador-checkbox" type="checkbox" name="trabajadores" value="{{ t.id }}">
-                </td>
-                <td>{{ t.nombre }} {{ t.apellido }} ({{ t.rut }})</td>
-                <td>
-                    <select name="roles_{{ t.id }}">
-                        <option value="">-- Rol --</option>
-                        {% for r in roles %}
-                        <option value="{{ r.id }}">{{ r.nombre }}</option>
-                        {% endfor %}
-                    </select>
-                </td>
-            </tr>
+                <tr>
+                    <td>
+                        <input class="trabajador-checkbox"
+                               type="checkbox"
+                               name="trabajadores"
+                               value="{{ t.id }}">
+                    </td>
+
+                    <td>{{ t.nombre }} {{ t.apellido }} ({{ t.rut }})</td>
+
+                    <td>
+                        <select name="roles_{{ t.id }}">
+                            <option value="">-- Rol --</option>
+                            {% for r in roles %}
+                                <option value="{{ r.id }}">{{ r.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
             {% endfor %}
         </tbody>
     </table>
@@ -80,7 +92,10 @@
         });
     }
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+    if(document.readyState === 'loading')
+        document.addEventListener('DOMContentLoaded', init);
+    else
+        init();
 })();
 </script>
 

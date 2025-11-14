@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
-{% load custom_tags %}
 {% block content %}
 
 <h2>Editar Cuadrilla: {{ cuadrilla.nombre }}</h2>
 
 <form method="post">
     {% csrf_token %}
+
     <div class="mb-3">
         <label>Nombre de la cuadrilla:</label>
         <input type="text" name="nombre" value="{{ cuadrilla.nombre }}" required>
@@ -16,9 +16,12 @@
         <select name="lider">
             <option value="">-- Ninguno --</option>
             {% for t in trabajadores %}
-            <option value="{% if t.user %}{{ t.user.id }}{% endif %}" {% if cuadrilla.lider and t.user and t.user.id == cuadrilla.lider.id %}selected{% endif %}>
-                {{ t.nombre }} {{ t.apellido }}{% if not t.user %} (sin user){% endif %}
-            </option>
+                {% if t.user %}
+                    <option value="{{ t.user.id }}"
+                        {% if cuadrilla.lider and t.user.id == cuadrilla.lider.id %}selected{% endif %}>
+                        {{ t.nombre }} {{ t.apellido }}
+                    </option>
+                {% endif %}
             {% endfor %}
         </select>
     </div>
@@ -28,13 +31,16 @@
         <select name="proyecto">
             <option value="">-- Ninguno --</option>
             {% for p in proyectos %}
-                <option value="{{ p.id }}" {% if cuadrilla.proyecto and p.id == cuadrilla.proyecto.id %}selected{% endif %}>{{ p.nombre }}</option>
+                <option value="{{ p.id }}"
+                    {% if cuadrilla.proyecto and p.id == cuadrilla.proyecto.id %}selected{% endif %}>
+                    {{ p.nombre }}
+                </option>
             {% endfor %}
         </select>
     </div>
 
     <h4>Trabajadores y Roles asignados</h4>
-    <p>Selecciona o desmarca los trabajadores que pertenecerán a la cuadrilla y su respectivo rol.</p>
+    <p>Selecciona los trabajadores y define sus roles.</p>
 
     <table class="table table-bordered">
         <thead>
@@ -46,40 +52,41 @@
             </tr>
         </thead>
         <tbody>
-            {% for t in trabajadores %}
-                {% if t.user %}
-                    {% with asignacion=asignaciones|get_asignacion:t.user.id %}
-                {% else %}
-                    {% with asignacion=None %}
-                {% endif %}
-                <tr>
-                    <td>
-                        <input class="trabajador-checkbox" type="checkbox" name="trabajadores" value="{{ t.id }}"
-                            {% if asignacion %}checked{% endif %}>
-                    </td>
-                    <td>{{ t.nombre }} {{ t.apellido }} ({{ t.rut }})</td>
-                    <td>
-                        {% if asignacion and asignacion.rol %}
-                            {{ asignacion.rol.nombre }}
-                        {% else %}
-                            Sin rol
-                        {% endif %}
-                    </td>
-                    <td>
-                                                <select name="roles_{{ t.id }}">
-                            <option value="">-- Rol --</option>
-                            {% for r in roles %}
-                                <option value="{{ r.id }}"
-                                    {% if asignacion and asignacion.rol and r.id == asignacion.rol.id %}selected{% endif %}>
-                                    {{ r.nombre }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </td>
-                </tr>
-                {% endwith %}
-                {% if t.user %}{% endif %}
-            {% endfor %}
+
+        {% for t in trabajadores %}
+            <tr>
+                <td>
+                    <input class="trabajador-checkbox"
+                           type="checkbox"
+                           name="trabajadores"
+                           value="{{ t.id }}"
+                           {% if t.asignacion %}checked{% endif %}>
+                </td>
+
+                <td>{{ t.nombre }} {{ t.apellido }} ({{ t.rut }})</td>
+
+                <td>
+                    {% if t.asignacion and t.asignacion.rol %}
+                        {{ t.asignacion.rol.nombre }}
+                    {% else %}
+                        Sin rol
+                    {% endif %}
+                </td>
+
+                <td>
+                    <select name="roles_{{ t.id }}">
+                        <option value="">-- Rol --</option>
+                        {% for r in roles %}
+                            <option value="{{ r.id }}"
+                                    {% if t.asignacion and t.asignacion.rol and r.id == t.asignacion.rol.id %}selected{% endif %}>
+                                {{ r.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+        {% endfor %}
+
         </tbody>
     </table>
 
@@ -88,24 +95,27 @@
 </form>
 
 <script>
-    (function(){
-        function toggleRoleSelect(id){
-            var chk = document.querySelector('input.trabajador-checkbox[value="'+id+'"]');
-            var sel = document.querySelector('select[name="roles_'+id+'"]');
-            if(!sel || !chk) return;
-            sel.disabled = !chk.checked;
-        }
+(function(){
+    function toggleRoleSelect(id){
+        var chk = document.querySelector('input.trabajador-checkbox[value="'+id+'"]');
+        var sel = document.querySelector('select[name="roles_'+id+'"]');
+        if(!sel || !chk) return;
+        sel.disabled = !chk.checked;
+    }
 
-        function init(){
-            document.querySelectorAll('input.trabajador-checkbox').forEach(function(chk){
-                var id = chk.value;
-                chk.addEventListener('change', function(){ toggleRoleSelect(id); });
-                toggleRoleSelect(id);
-            });
-        }
+    function init(){
+        document.querySelectorAll('input.trabajador-checkbox').forEach(function(chk){
+            var id = chk.value;
+            chk.addEventListener('change', function(){ toggleRoleSelect(id); });
+            toggleRoleSelect(id);
+        });
+    }
 
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
-    })();
+    if(document.readyState === 'loading')
+        document.addEventListener('DOMContentLoaded', init);
+    else
+        init();
+})();
 </script>
 
 {% endblock %}

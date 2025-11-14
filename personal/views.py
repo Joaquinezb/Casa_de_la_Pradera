@@ -1,20 +1,83 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from django.contrib.auth.views import PasswordChangeView
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.views import PasswordChangeView
+
 from proyectos.models import Proyecto
-from .models import Cuadrilla, Asignacion, Rol, TrabajadorPerfil, Competencia, Certificacion, Experiencia, Trabajador
+from .models import (
+    Cuadrilla, Asignacion, Rol, TrabajadorPerfil,
+    Competencia, Certificacion, Experiencia, Trabajador
+)
+
+
+# ============================================================
+# Helpers y utilidades internas
+# ============================================================
 
 def es_jefe(user):
     return user.groups.filter(name='JefeProyecto').exists()
 
 
+def asegurar_usuario(trabajador: Trabajador):
+    """
+    Garantiza que un Trabajador tenga un User asociado.
+    Si no tiene, crea uno; si tiene, solo lo retorna.
+    Maneja todos los errores de forma segura.
+    """
+    if trabajador.user:
+        return trabajador.user
+
+    try:
+        user = trabajador.crear_usuario()
+        Trabajador.objects.filter(pk=trabajador.pk).update(user_id=user.id)
+        trabajador.user = user
+        return user
+    except Exception as e:
+        raise ValueError(f"Error creando usuario para trabajador {trabajador.rut}: {str(e)}")
+
+
+def obtener_roles_segun_post(request, trabajador_id):
+    """
+    Extrae el rol seleccionado en el formulario para un trabajador.
+    Si es inválido o no viene, retorna None.
+    """
+    role_field = request.POST.get(f'roles_{trabajador_id}')
+    if not role_field:
+        return None
+    try:
+        return Rol.objects.filter(id=int(role_field)).first()
+    except:
+        return None
+
+
+def asignaciones_por_usuario(cuadrilla):
+    """
+    Retorna un dict rápido:
+        { user.id : asignacion }
+    para acceso O(1).
+    """
+    return {a.trabajador.id: a for a in cuadrilla.asignaciones.select_related('trabajador', 'rol')}
+
+
+def precargar_datos_trabajadores(trabajadores, asign_map):
+    """
+    Agrega la propiedad temporal .asignacion a cada Trabajador
+    para simplificar los templates.
+    """
+    for t in trabajadores:
+        t.asignacion = asign_map.get(t.user.id) if t.user else None
+    return trabajadores
+
+
+# ============================================================
+# Crear cuadrilla
+# ============================================================
+
 @login_required
 @user_passes_test(es_jefe)
 def crear_cuadrilla(request):
     proyectos = Proyecto.objects.filter(jefe=request.user)
-    # Obtener lista de trabajadores desde el modelo `Trabajador` (entidad principal)
     trabajadores = Trabajador.objects.filter(activo=True)
     roles = Rol.objects.all()
 
@@ -25,9 +88,7 @@ def crear_cuadrilla(request):
         seleccionados = request.POST.getlist('trabajadores')
 
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
-        lider = None
-        if lider_id:
-            lider = User.objects.filter(id=lider_id).first()
+        lider = User.objects.filter(id=lider_id).first() if lider_id else None
 
         cuadrilla = Cuadrilla.objects.create(
             nombre=nombre,
@@ -35,27 +96,11 @@ def crear_cuadrilla(request):
             lider=lider
         )
 
-        # Para cada trabajador seleccionado, leemos el rol específico enviado
-        # en el campo `roles_<trabajador_id>` para evitar desalineación de listas
+        # Crear asignaciones
         for trabajador_id in seleccionados:
-            # trabajador_id aquí corresponde al id del modelo Trabajador
-            trabajador_obj = Trabajador.objects.get(id=trabajador_id)
-            # Asegurar que exista el User vinculado; crear si hace falta
-            if not trabajador_obj.user:
-                user = trabajador_obj.crear_usuario()
-                # asociar el user al trabajador sin reentrar signals
-                Trabajador.objects.filter(pk=trabajador_obj.pk).update(user_id=user.id)
-                trabajador_obj.user = user
-
-            user = trabajador_obj.user
-
-            role_field = request.POST.get(f'roles_{trabajador_id}')
-            rol = None
-            if role_field:
-                try:
-                    rol = Rol.objects.filter(id=int(role_field)).first()
-                except (ValueError, TypeError):
-                    rol = None
+            trabajador_obj = get_object_or_404(Trabajador, id=trabajador_id)
+            user = asegurar_usuario(trabajador_obj)
+            rol = obtener_roles_segun_post(request, trabajador_id)
 
             Asignacion.objects.create(
                 trabajador=user,
@@ -63,9 +108,6 @@ def crear_cuadrilla(request):
                 rol=rol
             )
 
-        # Después de editar, redirigimos al detalle de la cuadrilla para que
-        # el usuario pueda verla/volver a editar fácilmente incluso si quedó
-        # sin proyecto asignado.
         return redirect('personal:detalle_cuadrilla', cuadrilla.id)
 
     return render(request, 'cuadrilla_form.html', {
@@ -75,72 +117,54 @@ def crear_cuadrilla(request):
     })
 
 
+# ============================================================
+# Editar cuadrilla
+# ============================================================
+
 @login_required
 @user_passes_test(es_jefe)
 def editar_cuadrilla(request, cuadrilla_id):
     cuadrilla = get_object_or_404(Cuadrilla, id=cuadrilla_id)
-    trabajadores = Trabajador.objects.filter(activo=True)
+    trabajadores = Trabajador.objects.filter(activo=True).select_related('user')
     roles = Rol.objects.all()
     proyectos = Proyecto.objects.filter(jefe=request.user)
 
+    # Pre-cargar asignaciones en un mapa
+    asign_map = asignaciones_por_usuario(cuadrilla)
+    trabajadores = precargar_datos_trabajadores(trabajadores, asign_map)
+
     if request.method == 'POST':
-        # Actualizar datos básicos
         cuadrilla.nombre = request.POST.get('nombre')
+
         lider_id = request.POST.get('lider')
-        cuadrilla.lider = None
-        if lider_id:
-            cuadrilla.lider = User.objects.filter(id=lider_id).first()
+        cuadrilla.lider = User.objects.filter(id=lider_id).first() if lider_id else None
 
-        # Permitir reasignar la cuadrilla a otro proyecto del jefe
         proyecto_id = request.POST.get('proyecto')
-        if proyecto_id:
-            cuadrilla.proyecto = Proyecto.objects.filter(id=proyecto_id, jefe=request.user).first()
-        else:
-            cuadrilla.proyecto = None
-
+        cuadrilla.proyecto = Proyecto.objects.filter(id=proyecto_id, jefe=request.user).first() if proyecto_id else None
         cuadrilla.save()
 
-        # Gestión incremental de asignaciones: actualizar roles, añadir o eliminar trabajadores
         seleccionados = set(request.POST.getlist('trabajadores'))
 
-        # Mapa de asignaciones actuales: llave como string del id del trabajador
-        actuales_qs = Asignacion.objects.filter(cuadrilla=cuadrilla)
+        actuales_qs = cuadrilla.asignaciones.all()
         actuales = {str(a.trabajador.id): a for a in actuales_qs}
 
-        # Añadir o actualizar los seleccionados
         for trabajador_id in seleccionados:
-            trabajador_obj = Trabajador.objects.get(id=trabajador_id)
-            # Asegurar user creado
-            if not trabajador_obj.user:
-                user = trabajador_obj.crear_usuario()
-                Trabajador.objects.filter(pk=trabajador_obj.pk).update(user_id=user.id)
-                trabajador_obj.user = user
+            trabajador_obj = get_object_or_404(Trabajador, id=trabajador_id)
+            user = asegurar_usuario(trabajador_obj)
+            rol = obtener_roles_segun_post(request, trabajador_id)
 
-            user = trabajador_obj.user
+            key = str(user.id)
 
-            role_field = request.POST.get(f'roles_{trabajador_id}')
-            rol = None
-            if role_field:
-                try:
-                    rol = Rol.objects.filter(id=int(role_field)).first()
-                except (ValueError, TypeError):
-                    rol = None
-
-            # clave en `actuales` es str(user.id) porque actuales fue construido desde Asignacion.trabajador (User)
-            clave_user_id = str(user.id)
-
-            if clave_user_id in actuales:
-                asign = actuales[clave_user_id]
-                # Actualizar rol si cambió
-                if (asign.rol and rol and asign.rol.id != rol.id) or (asign.rol is None and rol is not None) or (asign.rol is not None and rol is None):
-                    asign.rol = rol
-                    asign.save()
-                actuales.pop(clave_user_id, None)
+            if key in actuales:
+                asign = actuales[key]
+                asign.rol = rol
+                asign.save()
+                actuales.pop(key)
             else:
                 Asignacion.objects.create(trabajador=user, cuadrilla=cuadrilla, rol=rol)
 
-        # Los que quedaron en `actuales` no fueron seleccionados ahora -> eliminarlos
-        for rest_id, asign in list(actuales.items()):
+        # Eliminar asignaciones desmarcadas
+        for asign in actuales.values():
             asign.delete()
 
         return redirect('proyectos:panel')
@@ -149,38 +173,39 @@ def editar_cuadrilla(request, cuadrilla_id):
         'cuadrilla': cuadrilla,
         'trabajadores': trabajadores,
         'roles': roles,
-        'asignaciones': cuadrilla.asignaciones.all()
+        'proyectos': proyectos,
     })
 
+
+# ============================================================
+# Detalle cuadrilla
+# ============================================================
 
 @login_required
 @user_passes_test(es_jefe)
 def detalle_cuadrilla(request, cuadrilla_id):
     cuadrilla = get_object_or_404(Cuadrilla, id=cuadrilla_id)
-    asignaciones = Asignacion.objects.filter(cuadrilla=cuadrilla)
+    asignaciones = (
+        Asignacion.objects
+        .filter(cuadrilla=cuadrilla)
+        .select_related("trabajador", "rol")
+    )
 
-    # Extraer los users involucrados
-    trabajadores = [a.trabajador for a in asignaciones]
+    usuarios = [a.trabajador for a in asignaciones]
 
-    # Mapear perfiles, competencias, certificaciones y experiencias
-    perfiles = TrabajadorPerfil.objects.filter(user__in=trabajadores)
-    competencias = Competencia.objects.filter(trabajador__in=trabajadores)
-    certificaciones = Certificacion.objects.filter(trabajador__in=trabajadores)
-    experiencias = Experiencia.objects.filter(trabajador__in=trabajadores)
-
-    # Creamos estructuras fáciles de acceder desde la plantilla
+    perfiles = TrabajadorPerfil.objects.filter(user__in=usuarios)
     perfil_map = {p.user_id: p for p in perfiles}
 
     comp_map = {}
-    for c in competencias:
+    for c in Competencia.objects.filter(trabajador__in=usuarios):
         comp_map.setdefault(c.trabajador_id, []).append(c)
 
     cert_map = {}
-    for c in certificaciones:
+    for c in Certificacion.objects.filter(trabajador__in=usuarios):
         cert_map.setdefault(c.trabajador_id, []).append(c)
 
     exp_map = {}
-    for e in experiencias:
+    for e in Experiencia.objects.filter(trabajador__in=usuarios):
         exp_map.setdefault(e.trabajador_id, []).append(e)
 
     return render(request, 'detalle_cuadrilla.html', {
@@ -193,20 +218,11 @@ def detalle_cuadrilla(request, cuadrilla_id):
     })
 
 
-# ------------------------------------------------------------------
-# Código comentado: Vista personalizada de cambio de contraseña
-# - Este bloque está listo para habilitar cuando quieras probar el
-#   flujo de forzado de cambio de password (password inicial = RUT).
-# - Para habilitar: descomentar la clase, importar en `personal/urls.py`
-#   y registrar la ruta `password_change` apuntando a esta vista.
-# ------------------------------------------------------------------
+# ============================================================
+# Cambio de contraseña
+# ============================================================
+
 class TrabajadorPasswordChangeView(PasswordChangeView):
-    """Sobrescribe form_valid para marcar password_inicial=False en el Trabajador
-
-    Esta vista mantiene la sesión del usuario después del cambio de contraseña
-    y marca el flag `password_inicial=False` en el modelo `Trabajador`.
-    """
-
     def form_valid(self, form):
         response = super().form_valid(form)
 
@@ -217,3 +233,32 @@ class TrabajadorPasswordChangeView(PasswordChangeView):
 
         update_session_auth_hash(self.request, form.user)
         return response
+
+
+# ============================================================
+# Cambio estado manual trabajador
+# ============================================================
+
+
+@login_required
+@user_passes_test(es_jefe)
+def editar_estado_trabajador(request, trabajador_id):
+    trabajador = get_object_or_404(Trabajador, id=trabajador_id)
+
+    if request.method == "POST":
+        nuevo_estado = request.POST.get("estado_manual")
+
+        if nuevo_estado in ['disponible', 'no_disponible', 'licencia', 'vacaciones']:
+            perfil = getattr(trabajador.user, "perfil_trabajador", None)
+            if perfil:
+                perfil.estado_manual = nuevo_estado
+                perfil.save()
+
+        return redirect('personal:detalle_cuadrilla', trabajador.cuadrilla_set.first().id)
+
+    perfil = getattr(trabajador.user, "perfil_trabajador", None)
+
+    return render(request, "editar_estado_trabajador.html", {
+        "trabajador": trabajador,
+        "perfil": perfil,
+    })
