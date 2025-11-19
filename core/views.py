@@ -17,8 +17,9 @@ def dashboard_redirect(request):
     # Trabajador → asignaciones personales
     else:
         return redirect('tareas:asignaciones')  # Ajusta si no existe aún
-
-
-@login_required(login_url='/usuarios/login/')
 def index(request):
+    # Mostrar una página pública si el usuario NO está autenticado (sin navbar)
+    if not request.user.is_authenticated:
+        return render(request, 'index_public.html')
+    # Usuario autenticado: mostrar la vista que extiende `base.html`
     return render(request, 'index.html')
