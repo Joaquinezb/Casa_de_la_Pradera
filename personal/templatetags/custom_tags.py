@@ -1,10 +1,8 @@
 from django import template
+
 register = template.Library()
 
-from django import template
-register = template.Library()
-
-# --- Filtro 1: obtener item desde diccionario ---
+# --- Filtro 1: obtener item desde un diccionario ---
 @register.filter
 def get_item(dictionary, key):
     return dictionary.get(key)

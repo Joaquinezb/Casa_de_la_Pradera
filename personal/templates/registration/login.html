@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Iniciar sesión</h2>
-<form method="post" action="{% url 'login' %}">
+<form method="post" action="{% url 'usuarios:login' %}">
   {% csrf_token %}
   <div>
     <label for="id_username">Usuario (RUT sin puntos ni guión):</label><br>
