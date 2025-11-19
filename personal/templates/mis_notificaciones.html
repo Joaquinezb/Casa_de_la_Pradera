@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Notificaciones</h2>
+
+{% if notifs %}
+    <div class="mb-3">
+        <a href="{% url 'personal:notifs_leidas' %}" class="btn btn-sm btn-secondary">
+            Marcar todas como leídas
+        </a>
+    </div>
+
+    <ul class="list-group">
+        {% for n in notifs %}
+            <li class="list-group-item {% if not n.leida %}fw-bold list-group-item-warning{% endif %}">
+                {{ n.mensaje }}<br>
+                <small class="text-muted">{{ n.creado_en|date:"d/m/Y H:i" }}</small>
+            </li>
+        {% endfor %}
+    </ul>
+
+{% else %}
+    <p>No tienes notificaciones.</p>
+{% endif %}
+
+{% endblock %}

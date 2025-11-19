@@ -1,21 +1,101 @@
+{% load custom_tags %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>La Casa de la Pradera</title>
+    <meta charset="UTF-8">
+    <title>La Casa de la Pradera</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
+
 <body>
-  <nav>
-    <a href="{% url 'logout' %}">Cerrar sesión</a>
-  </nav>
 
-  <header>
-    <h1>La Casa de la Pradera</h1>
-    <hr>
-  </header>
+{% if request.user.is_authenticated %}
 
-  <main>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+
+        <a class="navbar-brand" href="{% url 'dashboard' %}">
+            La Casa de la Pradera
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#menuPrincipal" aria-controls="menuPrincipal"
+                aria-expanded="false" aria-label="Menú">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="menuPrincipal">
+
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                {# ========================== #}
+                {#  Opciones para Jefes       #}
+                {# ========================== #}
+                {% if request.user|has_group:"JefeProyecto" %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'proyectos:panel' %}">Proyectos</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'personal:crear_cuadrilla' %}">
+                            Crear Cuadrilla
+                        </a>
+                    </li>
+                {% endif %}
+
+                {# ========================== #}
+                {#  Opciones para Líderes     #}
+                {# ========================== #}
+                {% if request.user|has_group:"LiderCuadrilla" %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Mis Cuadrillas</a>
+                    </li>
+                {% endif %}
+
+                {# ========================== #}
+                {#  Opciones para Trabajadores #}
+                {# ========================== #}
+                {% if request.user|has_group:"Trabajador" %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Mi Perfil</a>
+                    </li>
+                {% endif %}
+
+                {# ========================== #}
+                {#   Notificaciones            #}
+                {# ========================== #}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'personal:mis_notificaciones' %}">
+                          Notificaciones
+                        {% if notifs_sin_leer > 0 %}
+                            <span class="badge bg-danger">{{ notifs_sin_leer }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+
+            </ul>
+
+            <!-- Usuario actual -->
+            <span class="navbar-text text-light me-3">
+                {{ request.user.first_name }} {{ request.user.last_name }}
+            </span>
+
+            <!-- Logout -->
+            <a href="{% url 'logout' %}" class="btn btn-outline-light">Cerrar sesión</a>
+
+        </div>
+    </div>
+</nav>
+
+{% endif %}
+
+<main class="container">
     {% block content %}{% endblock %}
-  </main>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

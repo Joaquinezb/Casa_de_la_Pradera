@@ -322,3 +322,25 @@ class ExperienciaTrabajador(models.Model):
 
     def __str__(self):
         return f"{self.trabajador.rut} - {self.proyecto or self.empresa_externa or 'Experiencia'}"
+    
+
+#  NOTIFICACIONES INTERNAS DEL SISTEMA
+
+class Notificacion(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="notificaciones"
+    )
+
+    mensaje = models.TextField()
+
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    leida = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-fecha"]
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.mensaje[:40]}"

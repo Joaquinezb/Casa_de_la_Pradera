@@ -9,21 +9,18 @@ urlpatterns = [
     # Cuadrillas (CRUD)
     # ============================================================
 
-    # Crear cuadrilla
     path(
         'cuadrilla/nueva/',
         views.crear_cuadrilla,
         name='crear_cuadrilla'
     ),
 
-    # Detalle de cuadrilla
     path(
         'cuadrilla/<int:cuadrilla_id>/',
         views.detalle_cuadrilla,
         name='detalle_cuadrilla'
     ),
 
-    # Editar cuadrilla
     path(
         'cuadrilla/<int:cuadrilla_id>/editar/',
         views.editar_cuadrilla,
@@ -31,28 +28,39 @@ urlpatterns = [
     ),
     
     path(
-    'trabajador/<int:trabajador_id>/estado/',
-    views.editar_estado_trabajador,
-    name='editar_estado_trabajador'
+        'trabajador/<int:trabajador_id>/estado/',
+        views.editar_estado_trabajador,
+        name='editar_estado_trabajador'
     ),
 
     path(
-    'trabajador/<int:trabajador_id>/detalle/',
-    views.detalle_trabajador,
-    name='detalle_trabajador'
+        'trabajador/<int:trabajador_id>/detalle/',
+        views.detalle_trabajador,
+        name='detalle_trabajador'
     ),
 
-
     # ============================================================
-    # (Opcional) Cambio de contraseña personalizado para trabajadores
-    # Descomentar si activas este flujo
+    # Notificaciones internas
     # ============================================================
 
+    path(
+        'notificaciones/',
+        views.mis_notificaciones,
+        name='mis_notificaciones'
+    ),
+
+    path(
+        'notificaciones/leidas/',
+        views.marcar_todas_leidas,
+        name='notifs_leidas'
+    ),
+
+    # ============================================================
+    # Cambio de contraseña (opcional)
+    # ============================================================
     # path(
     #     'password_change/',
     #     views.TrabajadorPasswordChangeView.as_view(),
     #     name='password_change'
     # ),
-
 ]
-

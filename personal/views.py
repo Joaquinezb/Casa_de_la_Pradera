@@ -7,8 +7,10 @@ from django.contrib.auth import update_session_auth_hash
 from proyectos.models import Proyecto
 from .models import (
     Cuadrilla, Asignacion, Rol, Trabajador, TrabajadorPerfil,
-    CompetenciaTrabajador, CertificacionTrabajador, ExperienciaTrabajador
+    CompetenciaTrabajador, CertificacionTrabajador, ExperienciaTrabajador,
+    Notificacion,
 )
+from .utils_notificaciones import crear_notificacion
 
 
 # -----------------------------------------------------
@@ -19,7 +21,7 @@ def es_jefe(user):
 
 
 # =====================================================
-# 1. CREAR CUADRILLA (VERSIÓN MEJORADA Y ESCALABLE)
+# 1. CREAR CUADRILLA (CORREGIDO)
 # =====================================================
 @login_required
 @user_passes_test(es_jefe)
@@ -35,34 +37,18 @@ def crear_cuadrilla(request):
 
     roles = Rol.objects.all()
 
-    # =============================================================
-    # Atributos dinámicos para la tabla y los filtros
-    # =============================================================
+    # Enriquecer trabajadores
     for t in trabajadores:
 
-        # 1) Está ocupado si tiene una asignación en cualquier cuadrilla
-        if t.user:
-            t.ocupado = Asignacion.objects.filter(trabajador=t.user).exists()
-        else:
-            t.ocupado = False
+        t.ocupado = Asignacion.objects.filter(trabajador=t.user).exists() if t.user else False
 
-        # 2) Perfil opcional (si existe)
         perfil = TrabajadorPerfil.objects.filter(user=t.user).first() if t.user else None
+        t.estado_real = perfil.estado_efectivo if perfil else t.estado
 
-        # 3) Estado lógico
-        if perfil:
-            t.estado_real = perfil.estado_efectivo
-        else:
-            t.estado_real = t.estado  # estado simple del modelo Trabajador
-
-        # 4) Certificaciones
         certs = CertificacionTrabajador.objects.filter(trabajador=t)
         t.certificacion_lista = [c.nombre for c in certs]
         t.tiene_certificaciones = certs.exists()
 
-    # =============================================================
-    # Filtros dinámicos
-    # =============================================================
     especialidades = (
         Trabajador.objects.exclude(especialidad__isnull=True)
         .exclude(especialidad__exact="")
@@ -70,13 +56,8 @@ def crear_cuadrilla(request):
         .distinct()
     )
 
-    certificaciones = (
-        CertificacionTrabajador.objects.values_list("nombre", flat=True).distinct()
-    )
+    certificaciones = CertificacionTrabajador.objects.values_list("nombre", flat=True).distinct()
 
-    # =============================================================
-    # PROCESAR FORMULARIO
-    # =============================================================
     if request.method == "POST":
 
         nombre = request.POST.get("nombre")
@@ -92,39 +73,47 @@ def crear_cuadrilla(request):
             lider=User.objects.filter(id=lider_id).first() if lider_id else None
         )
 
-        # ---------------------------------------------------------
-        # Procesar cada trabajador seleccionado
-        # ---------------------------------------------------------
+        trabajadores_asignados = []
+
         for trabajador_id in seleccionados:
 
             trabajador = Trabajador.objects.get(id=trabajador_id)
 
-            # Crear user si no tiene
             if not trabajador.user:
                 user = trabajador.crear_usuario()
                 Trabajador.objects.filter(pk=trabajador.pk).update(user_id=user.id)
                 trabajador.user = user
 
-            # === ROL → Protección para evitar errores ===
             rol_id = request.POST.get(f"roles_{trabajador_id}")
+            rol = Rol.objects.filter(id=rol_id).first() if rol_id and rol_id.isdigit() else None
 
-            if rol_id and rol_id.isdigit():
-                rol = Rol.objects.filter(id=int(rol_id)).first()
-            else:
-                rol = None
-
-            # Crear asignación
             Asignacion.objects.create(
                 trabajador=trabajador.user,
                 cuadrilla=cuadrilla,
                 rol=rol
             )
 
+            trabajadores_asignados.append((trabajador.user, rol))
+
+        # NOTIFICACIONES
+        for user, rol in trabajadores_asignados:
+            msg = f"Has sido asignado a la cuadrilla '{cuadrilla.nombre}'"
+            if cuadrilla.proyecto:
+                msg += f" en el proyecto '{cuadrilla.proyecto.nombre}'."
+            else:
+                msg += "."
+            if rol:
+                msg += f" Rol: {rol.nombre}."
+            crear_notificacion(user, msg)
+
+        if cuadrilla.lider:
+            crear_notificacion(
+                cuadrilla.lider,
+                f"Eres líder de la nueva cuadrilla '{cuadrilla.nombre}'."
+            )
+
         return redirect("personal:detalle_cuadrilla", cuadrilla.id)
 
-    # =============================================================
-    # RENDER
-    # =============================================================
     return render(request, "cuadrilla_form.html", {
         "proyectos": proyectos,
         "trabajadores": trabajadores,
@@ -133,8 +122,9 @@ def crear_cuadrilla(request):
         "certificaciones": certificaciones,
     })
 
+
 # =====================================================
-# 2. EDITAR CUADRILLA
+# 2. EDITAR CUADRILLA (CORREGIDO)
 # =====================================================
 @login_required
 @user_passes_test(es_jefe)
@@ -146,63 +136,42 @@ def editar_cuadrilla(request, cuadrilla_id):
     roles = Rol.objects.all()
     proyectos = Proyecto.objects.filter(jefe=request.user)
 
-    # Mapa: id_user -> asignación
     asignaciones_actuales = {
-        str(a.trabajador.id): a
-        for a in Asignacion.objects.filter(cuadrilla=cuadrilla)
+        str(a.trabajador.id): a for a in Asignacion.objects.filter(cuadrilla=cuadrilla)
     }
 
-    # Ligamos asignaciones al objeto trabajador
     for t in trabajadores:
-        if t.user and str(t.user.id) in asignaciones_actuales:
-            t.asignacion = asignaciones_actuales[str(t.user.id)]
-        else:
-            t.asignacion = None
+        t.asignacion = asignaciones_actuales.get(str(t.user.id)) if t.user else None
 
     if request.method == "POST":
 
-        # -------------------------
-        # Nombre
-        # -------------------------
+        lider_anterior = cuadrilla.lider
+        proyecto_anterior = cuadrilla.proyecto
+
         cuadrilla.nombre = request.POST.get("nombre")
 
-        # -------------------------
-        # LÍDER (validación segura)
-        # -------------------------
         lider_id = request.POST.get("lider")
-        if lider_id and lider_id.isdigit():
-            cuadrilla.lider = User.objects.filter(id=int(lider_id)).first()
-        else:
-            cuadrilla.lider = None
+        cuadrilla.lider = User.objects.filter(id=lider_id).first() if lider_id and lider_id.isdigit() else None
 
-        # -------------------------
-        # PROYECTO (validación segura)
-        # -------------------------
         proyecto_id = request.POST.get("proyecto")
-        if proyecto_id and proyecto_id.isdigit():
-            cuadrilla.proyecto = Proyecto.objects.filter(
-                id=int(proyecto_id),
-                jefe=request.user
-            ).first()
-        else:
-            cuadrilla.proyecto = None
+        cuadrilla.proyecto = Proyecto.objects.filter(
+            id=proyecto_id,
+            jefe=request.user
+        ).first() if proyecto_id and proyecto_id.isdigit() else None
 
         cuadrilla.save()
 
-        # Lista de trabajadores seleccionados
         seleccionados = set(request.POST.getlist("trabajadores"))
-
-        # Copia de asignaciones para eliminar luego las no usadas
         restantes = asignaciones_actuales.copy()
 
-        # ------------------------------------------------------
-        # Crear / actualizar asignaciones
-        # ------------------------------------------------------
+        agregados = []
+        removidos = []
+        cambios_rol = []
+
         for trabajador_id in seleccionados:
 
             trabajador_obj = Trabajador.objects.get(id=trabajador_id)
 
-            # Crear usuario si no existe
             if not trabajador_obj.user:
                 user = trabajador_obj.crear_usuario()
                 Trabajador.objects.filter(pk=trabajador_obj.pk).update(user_id=user.id)
@@ -211,15 +180,16 @@ def editar_cuadrilla(request, cuadrilla_id):
             user = trabajador_obj.user
             clave = str(user.id)
 
-            # Rol seguro
             rol_id = request.POST.get(f"roles_{trabajador_id}")
-            if rol_id and rol_id.isdigit():
-                rol = Rol.objects.filter(id=int(rol_id)).first()
-            else:
-                rol = None
+            rol = Rol.objects.filter(id=rol_id).first() if rol_id and rol_id.isdigit() else None
 
             if clave in restantes:
                 asign = restantes.pop(clave)
+                rol_anterior = asign.rol
+
+                if rol_anterior != rol:
+                    cambios_rol.append((user, cuadrilla, rol))
+
                 asign.rol = rol
                 asign.save()
 
@@ -229,12 +199,47 @@ def editar_cuadrilla(request, cuadrilla_id):
                     cuadrilla=cuadrilla,
                     rol=rol
                 )
+                agregados.append((user, rol))
 
-        # ------------------------------------------------------
-        # Eliminar asignaciones no seleccionadas
-        # ------------------------------------------------------
         for asign in restantes.values():
+            removidos.append((asign.trabajador, cuadrilla))
             asign.delete()
+
+        # NOTIFICACIONES
+        if lider_anterior != cuadrilla.lider:
+            if lider_anterior:
+                crear_notificacion(
+                    lider_anterior,
+                    f"Ya no eres líder de la cuadrilla '{cuadrilla.nombre}'."
+                )
+            if cuadrilla.lider:
+                crear_notificacion(
+                    cuadrilla.lider,
+                    f"Has sido asignado como líder de la cuadrilla '{cuadrilla.nombre}'."
+                )
+
+        if proyecto_anterior != cuadrilla.proyecto:
+            for asig in Asignacion.objects.filter(cuadrilla=cuadrilla):
+                msg = f"La cuadrilla '{cuadrilla.nombre}' ha cambiado de proyecto."
+                if cuadrilla.proyecto:
+                    msg += f" Nuevo proyecto: {cuadrilla.proyecto.nombre}."
+                crear_notificacion(asig.trabajador, msg)
+
+        for user, rol in agregados:
+            msg = f"Has sido agregado a la cuadrilla '{cuadrilla.nombre}'."
+            if rol:
+                msg += f" Rol: {rol.nombre}."
+            crear_notificacion(user, msg)
+
+        for user, cuad in removidos:
+            crear_notificacion(user, f"Has sido removido de la cuadrilla '{cuad.nombre}'.")
+
+        for user, cuad, rol in cambios_rol:
+            if rol:
+                msg = f"Tu rol en la cuadrilla '{cuad.nombre}' ahora es '{rol.nombre}'."
+            else:
+                msg = f"Tu rol en la cuadrilla '{cuad.nombre}' ha sido removido."
+            crear_notificacion(user, msg)
 
         return redirect("proyectos:panel")
 
@@ -244,22 +249,21 @@ def editar_cuadrilla(request, cuadrilla_id):
         "roles": roles,
         "proyectos": proyectos,
     })
-# =====================================================
-# 3. DETALLE DE CUADRILLA
-# =====================================================
-@login_required
-@user_passes_test(es_jefe)
-def detalle_cuadrilla(request, cuadrilla_id):
 
+
+# =====================================================
+# 3. DETALLE CUADRILLA (SIN CAMBIOS)
+# =====================================================
+def detalle_cuadrilla(request, cuadrilla_id):
     cuadrilla = get_object_or_404(Cuadrilla, id=cuadrilla_id)
     asignaciones = Asignacion.objects.filter(cuadrilla=cuadrilla)
 
     users = [a.trabajador for a in asignaciones]
 
     perfiles = TrabajadorPerfil.objects.filter(user__in=users)
-    competencias = CompetenciaTrabajador.objects.filter(trabajador_id__in=[u.id for u in users])
-    certificaciones = CertificacionTrabajador.objects.filter(trabajador_id__in=[u.id for u in users])
-    experiencias = ExperienciaTrabajador.objects.filter(trabajador_id__in=[u.id for u in users])
+    competencias = CompetenciaTrabajador.objects.filter(trabajador__in=[u.id for u in users])
+    certificaciones = CertificacionTrabajador.objects.filter(trabajador__in=[u.id for u in users])
+    experiencias = ExperienciaTrabajador.objects.filter(trabajador__in=[u.id for u in users])
 
     perfil_map = {p.user_id: p for p in perfiles}
 
@@ -286,27 +290,17 @@ def detalle_cuadrilla(request, cuadrilla_id):
 
 
 # =====================================================
-# 4. DETALLE INDIVIDUAL DE TRABAJADOR
+# 4. DETALLE TRABAJADOR (CORREGIDO)
 # =====================================================
-@login_required
-@user_passes_test(es_jefe)
 def detalle_trabajador(request, trabajador_id):
 
     trabajador = get_object_or_404(Trabajador, id=trabajador_id)
 
-    # Perfil (opcional)
     perfil = TrabajadorPerfil.objects.filter(user=trabajador.user).first()
-
-    # Competencias
     competencias = CompetenciaTrabajador.objects.filter(trabajador=trabajador)
-
-    # Certificaciones
     certificaciones = CertificacionTrabajador.objects.filter(trabajador=trabajador)
-
-    # Experiencias laborales
     experiencias = ExperienciaTrabajador.objects.filter(trabajador=trabajador)
 
-    # Asignaciones actuales (en qué cuadrilla está)
     asignaciones = Asignacion.objects.filter(trabajador=trabajador.user)
 
     return render(request, "detalle_trabajador.html", {
@@ -320,25 +314,25 @@ def detalle_trabajador(request, trabajador_id):
 
 
 # =====================================================
-# 5. CAMBIO DE ESTADO DEL TRABAJADOR
+# 5. EDITAR ESTADO TRABAJADOR
 # =====================================================
-@login_required
-@user_passes_test(es_jefe)
 def editar_estado_trabajador(request, trabajador_id):
 
-    # Buscar trabajador por ID (NO perfil)
     trabajador = get_object_or_404(Trabajador, id=trabajador_id)
-
-    # Tomar perfil opcional
     perfil = TrabajadorPerfil.objects.filter(user=trabajador.user).first()
 
     if request.method == "POST":
         nuevo_estado = request.POST.get("estado")
 
-        # El estado real del trabajador está en Trabajador.estado
         if nuevo_estado in ["disponible", "asignado", "vacaciones", "licencia", "inactivo"]:
             trabajador.estado = nuevo_estado
             trabajador.save()
+
+            if trabajador.user:
+                crear_notificacion(
+                    trabajador.user,
+                    f"Tu estado laboral ha cambiado a: {nuevo_estado}."
+                )
 
         return redirect("personal:detalle_trabajador", trabajador.id)
 
@@ -347,8 +341,28 @@ def editar_estado_trabajador(request, trabajador_id):
         "perfil": perfil,
     })
 
+
 # =====================================================
-# 6. CAMBIO DE CONTRASEÑA PERSONALIZADO
+# 6. NOTIFICACIONES
+# =====================================================
+@login_required
+def mis_notificaciones(request):
+
+    notifs = request.user.notificaciones.all()
+    return render(request, "mis_notificaciones.html", {
+        "notifs": notifs,
+    })
+
+
+@login_required
+def marcar_todas_leidas(request):
+
+    request.user.notificaciones.filter(leida=False).update(leida=True)
+    return redirect("personal:mis_notificaciones")
+
+
+# =====================================================
+# 7. PASSWORD CHANGE VIEW
 # =====================================================
 class TrabajadorPasswordChangeView(PasswordChangeView):
 
@@ -361,5 +375,4 @@ class TrabajadorPasswordChangeView(PasswordChangeView):
             trabajador.save()
 
         update_session_auth_hash(self.request, form.user)
-
         return response

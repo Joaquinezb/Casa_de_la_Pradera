@@ -110,13 +110,13 @@
         {% for t in trabajadores %}
 
         <tr class="fila-trabajador {% if t.ocupado %}table-danger{% endif %}"
-            data-nombre="{{ t.nombre }} {{ t.apellido }}|lower"
+            data-nombre="{{ t.nombre|lower }} {{ t.apellido|lower }}"
             data-especialidad="{{ t.especialidad|default:'ninguna'|lower }}"
             data-disponibilidad="{{ t.estado_real|lower }}"
             data-certificaciones="{% if t.tiene_certificaciones %}tiene{% else %}sin{% endif %}"
             data-cert-list="{{ t.certificacion_lista|join:',' }}">
 
-    <!-- Checkbox -->
+            <!-- Checkbox -->
             <td>
                 {% if t.ocupado %}
                     <input type="checkbox" disabled>
@@ -183,6 +183,7 @@
             </td>
 
         </tr>
+
         {% endfor %}
         </tbody>
 

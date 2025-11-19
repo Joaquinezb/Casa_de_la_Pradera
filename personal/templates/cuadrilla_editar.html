@@ -8,21 +8,19 @@
 
     <div class="mb-3">
         <label>Nombre de la cuadrilla:</label>
-        <input type="text" name="nombre" value="{{ cuadrilla.nombre }}" required>
+        <input type="text" name="nombre" value="{{ cuadrilla.nombre }}" required class="form-control">
     </div>
 
     <div class="mb-3">
         <label>Líder (opcional):</label>
-        <select name="lider">
+        <select name="lider" class="form-control">
             <option value="">-- Ninguno --</option>
             {% for t in trabajadores %}
                 {% if t.user %}
-                    <option value="{{ t.user.id }}"
-                        {% if cuadrilla.lider and t.user.id == cuadrilla.lider.id %}
-                            selected
-                        {% endif %}>
-                        {{ t.nombre }} {{ t.apellido }}
-                    </option>
+                <option value="{{ t.user.id }}"
+                    {% if cuadrilla.lider and t.user.id == cuadrilla.lider.id %}selected{% endif %}>
+                    {{ t.nombre }} {{ t.apellido }}
+                </option>
                 {% endif %}
             {% endfor %}
         </select>
@@ -30,54 +28,96 @@
 
     <div class="mb-3">
         <label>Proyecto asignado (opcional):</label>
-        <select name="proyecto">
+        <select name="proyecto" class="form-control">
             <option value="">-- Ninguno --</option>
             {% for p in proyectos %}
                 <option value="{{ p.id }}"
-                        {% if cuadrilla.proyecto and p.id == cuadrilla.proyecto.id %}
-                            selected
-                        {% endif %}>
+                    {% if cuadrilla.proyecto and p.id == cuadrilla.proyecto.id %}selected{% endif %}>
                     {{ p.nombre }}
                 </option>
             {% endfor %}
         </select>
     </div>
 
-    <h4>Trabajadores y Roles asignados</h4>
+    <h4 class="mt-4">Trabajadores y Roles asignados</h4>
 
-    <table class="table table-bordered">
+    <table class="table table-bordered align-middle">
         <thead>
             <tr>
                 <th>Incluir</th>
                 <th>Trabajador</th>
+                <th>Estado</th>
+                <th>Especialidad</th>
+                <th>Certificaciones</th>
                 <th>Rol actual</th>
                 <th>Nuevo Rol</th>
+                <th>Ficha</th>
             </tr>
         </thead>
 
         <tbody>
             {% for t in trabajadores %}
-                <tr>
-                    <td>
+            <tr class="{% if t.estado_real == 'ocupado' %}table-danger{% endif %}">
+
+                <!-- Checkbox -->
+                <td>
+                    {% if t.estado_real == 'ocupado' %}
+                        <input type="checkbox" disabled>
+                    {% else %}
                         <input class="trabajador-checkbox"
                                type="checkbox"
                                name="trabajadores"
                                value="{{ t.id }}"
                                {% if t.asignacion %}checked{% endif %}>
-                    </td>
+                    {% endif %}
+                </td>
 
-                    <td>{{ t.nombre }} {{ t.apellido }} ({{ t.rut }})</td>
+                <!-- Nombre -->
+                <td>
+                    {{ t.nombre }} {{ t.apellido }}<br>
+                    <small class="text-muted">{{ t.rut }}</small>
+                </td>
 
-                    <td>
-                        {% if t.asignacion and t.asignacion.rol %}
-                            {{ t.asignacion.rol.nombre }}
-                        {% else %}
-                            Sin rol
-                        {% endif %}
-                    </td>
+                <!-- Estado -->
+                <td>
+                    {% if t.estado_real == 'ocupado' %}
+                        <span class="badge bg-danger">Ocupado</span>
+                    {% else %}
+                        <span class="badge bg-success">{{ t.estado_real }}</span>
+                    {% endif %}
+                </td>
 
-                    <td>
-                        <select name="roles_{{ t.id }}">
+                <!-- Especialidad -->
+                <td>{{ t.especialidad|default:"—" }}</td>
+
+                <!-- Certificaciones -->
+                <td>
+                    {% if t.tiene_certificaciones %}
+                        <ul class="mb-0">
+                            {% for c in t.certificacion_lista %}
+                                <li>{{ c }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
+                <!-- Rol actual -->
+                <td>
+                    {% if t.asignacion and t.asignacion.rol %}
+                        {{ t.asignacion.rol.nombre }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
+                <!-- Nuevo rol -->
+                <td>
+                    {% if t.estado_real == 'ocupado' %}
+                        <select class="form-control" disabled><option>—</option></select>
+                    {% else %}
+                        <select name="roles_{{ t.id }}" class="form-control rol-select">
                             <option value="">-- Rol --</option>
                             {% for r in roles %}
                                 <option value="{{ r.id }}"
@@ -88,14 +128,27 @@
                                 </option>
                             {% endfor %}
                         </select>
-                    </td>
-                </tr>
+                    {% endif %}
+                </td>
+
+                <!-- Ficha -->
+                <td>
+                    {% if t.user %}
+                        <a href="{% url 'personal:detalle_trabajador' t.id %}"
+                           class="btn btn-info btn-sm">Ver ficha</a>
+                    {% else %}
+                        <em>Sin usuario</em>
+                    {% endif %}
+                </td>
+
+            </tr>
             {% endfor %}
         </tbody>
     </table>
 
     <button type="submit" class="btn btn-primary mt-2">Guardar Cambios</button>
     <a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-2">Cancelar</a>
+
 </form>
 
 <script>
@@ -103,7 +156,7 @@
     function toggleRoleSelect(id){
         var chk = document.querySelector('input.trabajador-checkbox[value="'+id+'"]');
         var sel = document.querySelector('select[name="roles_'+id+'"]');
-        if(!sel || !chk) return;
+        if (!sel || !chk) return;
         sel.disabled = !chk.checked;
     }
 
@@ -115,7 +168,7 @@
         });
     }
 
-    if(document.readyState === 'loading')
+    if (document.readyState === 'loading')
         document.addEventListener('DOMContentLoaded', init);
     else
         init();
