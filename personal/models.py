@@ -135,39 +135,14 @@ class Experiencia(models.Model):
 
 # --- Nuevo modelo: Trabajador (entidad principal) ---
 def rut_valido(value):
-    """Valida RUT chileno con DV. Acepta formatos con o sin puntos y guión.
+    """Validador simplificado para RUT: acepta únicamente exactamente 9 dígitos.
 
-    Lógica: limpiar caracteres no alfanuméricos, separar cuerpo y dv,
-    calcular dv esperado y comparar.
+    Se limpia cualquier carácter no numérico y se exige que la longitud sea 9.
+    Esto evita la validación del Dígito Verificador (DV).
     """
-    rut = ''.join(ch for ch in str(value) if ch.isalnum())
-    if len(rut) < 2:
-        raise ValidationError('RUT inválido')
-    cuerpo = rut[:-1]
-    dv = rut[-1].upper()
-
-    try:
-        reversed_digits = map(int, reversed(cuerpo))
-    except Exception:
-        raise ValidationError('RUT inválido')
-
-    factors = [2, 3, 4, 5, 6, 7]
-    s = 0
-    factor_index = 0
-    for d in reversed_digits:
-        s += d * factors[factor_index]
-        factor_index = (factor_index + 1) % len(factors)
-
-    modulus = 11 - (s % 11)
-    if modulus == 11:
-        dv_expected = '0'
-    elif modulus == 10:
-        dv_expected = 'K'
-    else:
-        dv_expected = str(modulus)
-
-    if dv != dv_expected:
-        raise ValidationError('Dígito verificador (DV) inválido')
+    rut = ''.join(ch for ch in str(value) if ch.isdigit())
+    if not rut.isdigit() or len(rut) != 9:
+        raise ValidationError('El RUT debe contener exactamente 9 dígitos numéricos')
 
 
 class Trabajador(models.Model):
