@@ -39,6 +39,13 @@
             Asignar / Editar Cuadrillas
         </a>
 
+        {% if item.proyecto.activo %}
+            <!-- Ir a la página de confirmación (GET) antes de finalizar -->
+            <a href="{% url 'proyectos:finalizar' item.proyecto.id %}" class="btn btn-sm btn-danger mt-2 ms-2">Finalizar proyecto</a>
+        {% else %}
+            <span class="badge bg-secondary ms-2">Finalizado</span>
+        {% endif %}
+
         <a href="{% url 'personal:crear_cuadrilla' %}" class="btn btn-outline-primary">
     + Crear Cuadrilla
 </a>
@@ -65,6 +72,23 @@
                 </li>
             {% endfor %}
             </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Sección: Proyectos finalizados #}
+    {% if finalizados and finalizados|length > 0 %}
+    <div class="card mt-4">
+        <div class="card-body">
+            <h4>Proyectos finalizados</h4>
+            {% for item in finalizados %}
+                <div class="mb-3">
+                    <strong>{{ item.proyecto.nombre }}</strong>
+                    – ({{ item.proyecto.fecha_inicio }} - {{ item.proyecto.fecha_termino|default:'—' }})
+                    <span class="badge bg-secondary ms-2">Finalizado</span>
+                    <p class="small">{{ item.proyecto.descripcion|default:'Sin descripción' }}</p>
+                </div>
+            {% endfor %}
         </div>
     </div>
     {% endif %}

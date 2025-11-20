@@ -39,6 +39,12 @@ urlpatterns = [
         name='detalle_trabajador'
     ),
 
+    path(
+        'mover_trabajador/',
+        views.mover_trabajador,
+        name='mover_trabajador'
+    ),
+
     # ============================================================
     # Notificaciones internas
     # ============================================================

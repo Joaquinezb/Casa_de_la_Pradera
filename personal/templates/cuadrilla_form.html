@@ -109,7 +109,8 @@
 
         {% for t in trabajadores %}
 
-        <tr class="fila-trabajador {% if t.ocupado %}table-danger{% endif %}"
+            {% comment %} Considerar estados que impiden selección: 'licencia', 'vacaciones', 'no_disponible' {% endcomment %}
+            <tr class="fila-trabajador {% if t.ocupado %}table-danger{% elif t.estado_real == 'licencia' or t.estado_real == 'vacaciones' %}table-warning{% endif %}"
             data-nombre="{{ t.nombre|lower }} {{ t.apellido|lower }}"
             data-especialidad="{{ t.especialidad|default:'ninguna'|lower }}"
             data-disponibilidad="{{ t.estado_real|lower }}"
@@ -118,7 +119,7 @@
 
             <!-- Checkbox -->
             <td>
-                {% if t.ocupado %}
+                {% if t.ocupado or t.estado_real == 'licencia' or t.estado_real == 'vacaciones' or t.estado_real == 'no_disponible' %}
                     <input type="checkbox" disabled>
                 {% else %}
                     <input class="trabajador-checkbox"
@@ -138,6 +139,10 @@
             <td>
                 {% if t.ocupado %}
                     <span class="badge bg-danger">Ocupado</span>
+                {% elif t.estado_real == 'vacaciones' %}
+                    <span class="badge bg-warning text-dark">Vacaciones</span>
+                {% elif t.estado_real == 'licencia' %}
+                    <span class="badge bg-warning text-dark">Licencia</span>
                 {% else %}
                     <span class="badge bg-success">{{ t.estado_real }}</span>
                 {% endif %}
@@ -158,7 +163,7 @@
 
             <!-- Rol -->
             <td>
-                {% if t.ocupado %}
+                {% if t.ocupado or t.estado_real == 'licencia' or t.estado_real == 'vacaciones' or t.estado_real == 'no_disponible' %}
                     <select disabled class="form-control">
                         <option>—</option>
                     </select>

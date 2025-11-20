@@ -183,6 +183,8 @@ class Trabajador(models.Model):
 
     # Indica si el password es inicial (a cambiar en primer login)
     password_inicial = models.BooleanField(default=False)
+    # Si True, el campo `estado` en este modelo tiene prioridad sobre la lógica automática
+    manual_override = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -40,10 +40,12 @@ def crear_cuadrilla(request):
     # Enriquecer trabajadores
     for t in trabajadores:
 
-        t.ocupado = Asignacion.objects.filter(trabajador=t.user).exists() if t.user else False
+        # Considerar 'ocupado' cuando el trabajador está asignado a una cuadrilla que tiene proyecto
+        t.ocupado = Asignacion.objects.filter(trabajador=t.user, cuadrilla__proyecto__isnull=False).exists() if t.user else False
 
         perfil = TrabajadorPerfil.objects.filter(user=t.user).first() if t.user else None
-        t.estado_real = perfil.estado_efectivo if perfil else t.estado
+        # Priorizar el estado manual del Trabajador si manual_override está activo, sino usar el estado efectivo del perfil
+        t.estado_real = t.estado if getattr(t, 'manual_override', False) else (perfil.estado_efectivo if perfil else 'disponible')
 
         certs = CertificacionTrabajador.objects.filter(trabajador=t)
         t.certificacion_lista = [c.nombre for c in certs]
@@ -65,7 +67,9 @@ def crear_cuadrilla(request):
         lider_id = request.POST.get("lider")
         seleccionados = request.POST.getlist("trabajadores")
 
-        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+        proyecto = None
+        if proyecto_id and proyecto_id.isdigit():
+            proyecto = Proyecto.objects.filter(id=proyecto_id).first()
 
         cuadrilla = Cuadrilla.objects.create(
             nombre=nombre,
@@ -76,8 +80,20 @@ def crear_cuadrilla(request):
         trabajadores_asignados = []
 
         for trabajador_id in seleccionados:
-
             trabajador = Trabajador.objects.get(id=trabajador_id)
+
+            # calcular estado efectivo para validación server-side
+            perfil_tmp = TrabajadorPerfil.objects.filter(user=trabajador.user).first() if trabajador.user else None
+            estado_efectivo = trabajador.estado if getattr(trabajador, 'manual_override', False) else (perfil_tmp.estado_efectivo if perfil_tmp else 'disponible')
+
+            # No permitir asignar si está en licencia, vacaciones o no_disponible
+            if estado_efectivo in ['licencia', 'vacaciones', 'no_disponible']:
+                continue
+
+            # No permitir asignar si ya está asignado a una cuadrilla que tiene proyecto
+            asignado_a_proyecto = Asignacion.objects.filter(trabajador=trabajador.user, cuadrilla__proyecto__isnull=False).exists() if trabajador.user else False
+            if asignado_a_proyecto:
+                continue
 
             if not trabajador.user:
                 user = trabajador.crear_usuario()
@@ -143,6 +159,17 @@ def editar_cuadrilla(request, cuadrilla_id):
     for t in trabajadores:
         t.asignacion = asignaciones_actuales.get(str(t.user.id)) if t.user else None
 
+        # Enriquecer información para mostrar estado y certificaciones
+        # Considerar 'ocupado' cuando el trabajador está asignado a una cuadrilla que tiene proyecto
+        t.ocupado = Asignacion.objects.filter(trabajador=t.user, cuadrilla__proyecto__isnull=False).exists() if t.user else False
+        perfil = TrabajadorPerfil.objects.filter(user=t.user).first() if t.user else None
+        # Priorizar el estado manual del Trabajador si manual_override está activo, sino usar el estado efectivo del perfil
+        t.estado_real = t.estado if getattr(t, 'manual_override', False) else (perfil.estado_efectivo if perfil else 'disponible')
+
+        certs = CertificacionTrabajador.objects.filter(trabajador=t)
+        t.certificacion_lista = [c.nombre for c in certs]
+        t.tiene_certificaciones = certs.exists()
+
     if request.method == "POST":
 
         lider_anterior = cuadrilla.lider
@@ -171,6 +198,18 @@ def editar_cuadrilla(request, cuadrilla_id):
         for trabajador_id in seleccionados:
 
             trabajador_obj = Trabajador.objects.get(id=trabajador_id)
+
+            # validar estado efectivo y evitar asignar si está en licencia/vacaciones/no_disponible
+            perfil_tmp = TrabajadorPerfil.objects.filter(user=trabajador_obj.user).first() if trabajador_obj.user else None
+            estado_efectivo = trabajador_obj.estado if getattr(trabajador_obj, 'manual_override', False) else (perfil_tmp.estado_efectivo if perfil_tmp else 'disponible')
+            if estado_efectivo in ['licencia', 'vacaciones', 'no_disponible']:
+                # Si el trabajador fue seleccionado por error, simplemente saltarlo
+                continue
+
+            # Evitar asignar si ya está asignado a una cuadrilla que tiene proyecto
+            asignado_a_proyecto = Asignacion.objects.filter(trabajador=trabajador_obj.user, cuadrilla__proyecto__isnull=False).exists() if trabajador_obj.user else False
+            if asignado_a_proyecto:
+                continue
 
             if not trabajador_obj.user:
                 user = trabajador_obj.crear_usuario()
@@ -260,24 +299,31 @@ def detalle_cuadrilla(request, cuadrilla_id):
 
     users = [a.trabajador for a in asignaciones]
 
+    # Obtener los Trabajador correspondientes a los Users asignados
+    trabajadores = Trabajador.objects.filter(user__in=users)
+
     perfiles = TrabajadorPerfil.objects.filter(user__in=users)
-    competencias = CompetenciaTrabajador.objects.filter(trabajador__in=[u.id for u in users])
-    certificaciones = CertificacionTrabajador.objects.filter(trabajador__in=[u.id for u in users])
-    experiencias = ExperienciaTrabajador.objects.filter(trabajador__in=[u.id for u in users])
+    competencias = CompetenciaTrabajador.objects.filter(trabajador__in=trabajadores)
+    certificaciones = CertificacionTrabajador.objects.filter(trabajador__in=trabajadores)
+    experiencias = ExperienciaTrabajador.objects.filter(trabajador__in=trabajadores)
 
     perfil_map = {p.user_id: p for p in perfiles}
 
     comp_map = {}
     for c in competencias:
-        comp_map.setdefault(c.trabajador_id, []).append(c)
+        # clave por user.id para coincidir con la plantilla
+        user_id = c.trabajador.user_id
+        comp_map.setdefault(user_id, []).append(c)
 
     cert_map = {}
     for c in certificaciones:
-        cert_map.setdefault(c.trabajador_id, []).append(c)
+        user_id = c.trabajador.user_id
+        cert_map.setdefault(user_id, []).append(c)
 
     exp_map = {}
     for e in experiencias:
-        exp_map.setdefault(e.trabajador_id, []).append(e)
+        user_id = e.trabajador.user_id
+        exp_map.setdefault(user_id, []).append(e)
 
     return render(request, "detalle_cuadrilla.html", {
         "cuadrilla": cuadrilla,
@@ -286,7 +332,48 @@ def detalle_cuadrilla(request, cuadrilla_id):
         "comp_map": comp_map,
         "cert_map": cert_map,
         "exp_map": exp_map,
+        "can_manage": request.user.is_authenticated and request.user.groups.filter(name='JefeProyecto').exists(),
+        "cuadrillas": Cuadrilla.objects.all(),
     })
+
+
+
+@login_required
+@user_passes_test(es_jefe)
+def mover_trabajador(request):
+    """
+    Mueve un trabajador (a través de su Asignacion) de una cuadrilla a otra.
+    Espera POST con 'asignacion_id' y 'nueva_cuadrilla_id'.
+    Crea notificaciones para el trabajador y, si corresponde, para los líderes afectados.
+    """
+    if request.method != 'POST':
+        return redirect('proyectos:panel')
+
+    asignacion_id = request.POST.get('asignacion_id')
+    nueva_id = request.POST.get('nueva_cuadrilla_id')
+
+    asign = Asignacion.objects.filter(id=asignacion_id).first()
+    nueva = Cuadrilla.objects.filter(id=nueva_id).first()
+
+    if not asign or not nueva:
+        return redirect('personal:detalle_cuadrilla', asign.cuadrilla.id if asign else None)
+
+    antigua = asign.cuadrilla
+    trabajador_user = asign.trabajador
+
+    asign.cuadrilla = nueva
+    asign.save()
+
+    # Notificar al trabajador
+    crear_notificacion(trabajador_user, f"Has sido trasladado de la cuadrilla '{antigua.nombre}' a '{nueva.nombre}'.")
+
+    # Notificar líderes si aplicable
+    if antigua.lider:
+        crear_notificacion(antigua.lider, f"El trabajador {trabajador_user.get_full_name()} ha sido removido de tu cuadrilla '{antigua.nombre}'.")
+    if nueva.lider:
+        crear_notificacion(nueva.lider, f"El trabajador {trabajador_user.get_full_name()} ha sido asignado a tu cuadrilla '{nueva.nombre}'.")
+
+    return redirect('personal:detalle_cuadrilla', nueva.id)
 
 
 # =====================================================
@@ -303,6 +390,15 @@ def detalle_trabajador(request, trabajador_id):
 
     asignaciones = Asignacion.objects.filter(trabajador=trabajador.user)
 
+    # Calcular disponibilidad: si el trabajador tiene override manual, usar su estado;
+    # en otro caso usar el estado efectivo calculado en el perfil.
+    if getattr(trabajador, 'manual_override', False):
+        disponibilidad = trabajador.estado
+    elif perfil:
+        disponibilidad = perfil.estado_efectivo
+    else:
+        disponibilidad = '—'
+
     return render(request, "detalle_trabajador.html", {
         "trabajador": trabajador,
         "perfil": perfil,
@@ -310,6 +406,7 @@ def detalle_trabajador(request, trabajador_id):
         "certificaciones": certificaciones,
         "experiencias": experiencias,
         "asignaciones": asignaciones,
+        "disponibilidad": disponibilidad,
     })
 
 
@@ -322,10 +419,20 @@ def editar_estado_trabajador(request, trabajador_id):
     perfil = TrabajadorPerfil.objects.filter(user=trabajador.user).first()
 
     if request.method == "POST":
-        nuevo_estado = request.POST.get("estado")
+        nuevo_estado = request.POST.get("estado_manual")
 
-        if nuevo_estado in ["disponible", "asignado", "vacaciones", "licencia", "inactivo"]:
+        if nuevo_estado in ["disponible", "asignado", "vacaciones", "licencia", "inactivo", "no_disponible"]:
+            # Asegurar que exista perfil
+            if not perfil and trabajador.user:
+                perfil = TrabajadorPerfil.objects.create(user=trabajador.user)
+
+            # Guardar en perfil y marcar override manual en Trabajador
+            if perfil:
+                perfil.estado_manual = nuevo_estado
+                perfil.save()
+
             trabajador.estado = nuevo_estado
+            trabajador.manual_override = True
             trabajador.save()
 
             if trabajador.user:
