@@ -115,6 +115,7 @@
                 <td>
                     {% if t.ocupado or t.estado_real == 'licencia' or t.estado_real == 'vacaciones' or t.estado_real == 'no_disponible' %}
                         <select class="form-control" disabled><option>—</option></select>
+                        <input type="text" class="form-control mt-1" disabled placeholder="Nuevo rol (opcional)">
                     {% else %}
                         <select name="roles_{{ t.id }}" class="form-control rol-select">
                             <option value="">-- Rol --</option>
@@ -122,6 +123,7 @@
                                 <option value="{{ r.id }}" {% if t.asignacion and t.asignacion.rol and r.id == t.asignacion.rol.id %}selected{% endif %}>{{ r.nombre }}</option>
                             {% endfor %}
                         </select>
+                        <input type="text" name="roles_custom_{{ t.id }}" class="form-control mt-1" placeholder="Nuevo rol (opcional)">
                     {% endif %}
                 </td>
 

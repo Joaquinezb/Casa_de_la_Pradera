@@ -100,8 +100,13 @@ def crear_cuadrilla(request):
                 Trabajador.objects.filter(pk=trabajador.pk).update(user_id=user.id)
                 trabajador.user = user
 
-            rol_id = request.POST.get(f"roles_{trabajador_id}")
-            rol = Rol.objects.filter(id=rol_id).first() if rol_id and rol_id.isdigit() else None
+            # Soporta rol personalizado por trabajador: 'roles_custom_{id}'
+            rol_custom = (request.POST.get(f"roles_custom_{trabajador_id}") or '').strip()
+            if rol_custom:
+                rol, _ = Rol.objects.get_or_create(nombre=rol_custom)
+            else:
+                rol_id = request.POST.get(f"roles_{trabajador_id}")
+                rol = Rol.objects.filter(id=rol_id).first() if rol_id and rol_id.isdigit() else None
 
             Asignacion.objects.create(
                 trabajador=trabajador.user,
@@ -219,8 +224,13 @@ def editar_cuadrilla(request, cuadrilla_id):
             user = trabajador_obj.user
             clave = str(user.id)
 
-            rol_id = request.POST.get(f"roles_{trabajador_id}")
-            rol = Rol.objects.filter(id=rol_id).first() if rol_id and rol_id.isdigit() else None
+            # Soporta rol personalizado por trabajador: 'roles_custom_{id}'
+            rol_custom = (request.POST.get(f"roles_custom_{trabajador_id}") or '').strip()
+            if rol_custom:
+                rol, _ = Rol.objects.get_or_create(nombre=rol_custom)
+            else:
+                rol_id = request.POST.get(f"roles_{trabajador_id}")
+                rol = Rol.objects.filter(id=rol_id).first() if rol_id and rol_id.isdigit() else None
 
             if clave in restantes:
                 asign = restantes.pop(clave)

@@ -167,6 +167,7 @@
                     <select disabled class="form-control">
                         <option>—</option>
                     </select>
+                    <input type="text" class="form-control mt-1" disabled placeholder="Nuevo rol (opcional)">
                 {% else %}
                     <select name="roles_{{ t.id }}" class="form-control rol-select">
                         <option value="">-- Rol --</option>
@@ -174,6 +175,7 @@
                             <option value="{{ r.id }}">{{ r.nombre }}</option>
                         {% endfor %}
                     </select>
+                    <input type="text" name="roles_custom_{{ t.id }}" class="form-control mt-1" placeholder="Nuevo rol (opcional)">
                 {% endif %}
             </td>
 
