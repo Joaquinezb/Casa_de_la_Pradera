@@ -376,6 +376,40 @@ def mover_trabajador(request):
     return redirect('personal:detalle_cuadrilla', nueva.id)
 
 
+
+@login_required
+@user_passes_test(es_jefe)
+def disolver_cuadrilla(request, cuadrilla_id):
+    """Eliminar una cuadrilla que no esté asociada a un proyecto.
+
+    Crea notificaciones para los trabajadores que fueran asignados y para el líder.
+    """
+    cuad = get_object_or_404(Cuadrilla, id=cuadrilla_id)
+
+    # Solo permitir disolver si no está asociada a un proyecto
+    if cuad.proyecto is not None:
+        crear_notificacion(request.user, f"No se puede disolver la cuadrilla '{cuad.nombre}' porque está asociada a un proyecto.")
+        return redirect('personal:detalle_cuadrilla', cuad.id)
+
+    # Capturar información antes de eliminar
+    asignaciones = list(Asignacion.objects.filter(cuadrilla=cuad))
+    lider = cuad.lider
+    nombre = cuad.nombre
+
+    # Borrar la cuadrilla (cascade eliminará asignaciones)
+    cuad.delete()
+
+    # Notificar a trabajadores
+    for a in asignaciones:
+        crear_notificacion(a.trabajador, f"La cuadrilla '{nombre}' ha sido disuelta. Ya no perteneces a esa cuadrilla.")
+
+    # Notificar al líder si existía
+    if lider:
+        crear_notificacion(lider, f"La cuadrilla '{nombre}' que liderabas ha sido disuelta.")
+
+    return redirect('proyectos:panel')
+
+
 # =====================================================
 # 4. DETALLE TRABAJADOR (CORREGIDO)
 # =====================================================

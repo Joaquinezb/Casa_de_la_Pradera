@@ -45,6 +45,12 @@ urlpatterns = [
         name='mover_trabajador'
     ),
 
+    path(
+        'cuadrilla/<int:cuadrilla_id>/disolver/',
+        views.disolver_cuadrilla,
+        name='disolver_cuadrilla'
+    ),
+
     # ============================================================
     # Notificaciones internas
     # ============================================================

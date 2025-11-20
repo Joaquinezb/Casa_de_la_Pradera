@@ -167,4 +167,11 @@
 <a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-3">Volver</a>
 <a href="{% url 'personal:editar_cuadrilla' cuadrilla.id %}" class="btn btn-primary mt-3 ms-2">Editar</a>
 
+{% if can_manage and not cuadrilla.proyecto %}
+    <form method="post" action="{% url 'personal:disolver_cuadrilla' cuadrilla.id %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger mt-3 ms-2" onclick="return confirm('¿Seguro que quieres disolver esta cuadrilla? Esta acción eliminará la cuadrilla y sus asignaciones.')">Disolver Cuadrilla</button>
+    </form>
+{% endif %}
+
 {% endblock %}

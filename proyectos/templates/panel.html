@@ -63,12 +63,16 @@
             <h5>Cuadrillas sin proyecto</h5>
             <ul>
             {% for c in cuadrillas_sin_proyecto %}
-                <li>
+                <li class="mb-3">
                     <strong>{{ c.nombre }}</strong>
                     — Líder: {{ c.lider.username|default:"(Sin líder)" }}
                     — ({{ c.asignaciones.count }} trabajadores)
                     <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-outline-primary ms-2">Ver</a>
                     <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-outline-secondary ms-2">Editar</a>
+                    <form method="post" action="{% url 'personal:disolver_cuadrilla' c.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger ms-2" onclick="return confirm('¿Deseas disolver la cuadrilla \"{{ c.nombre }}\"? Esta acción eliminará la cuadrilla y sus asignaciones.')">Disolver</button>
+                    </form>
                 </li>
             {% endfor %}
             </ul>
