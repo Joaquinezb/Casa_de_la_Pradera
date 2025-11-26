@@ -8,7 +8,12 @@
 {% for item in data %}
 <div class="card mt-4">
     <div class="card-body">
-        <h4>{{ item.proyecto.nombre }}</h4>
+        <h4>
+            {{ item.proyecto.nombre }}
+            <a href="{% url 'proyectos:editar' item.proyecto.id %}" class="btn btn-sm btn-outline-secondary ms-2" title="Editar proyecto" style="padding:0.15rem 0.4rem; font-size:0.9rem; vertical-align:middle;">
+                &#9998;
+            </a>
+        </h4>
         <p><strong>Inicio:</strong> {{ item.proyecto.fecha_inicio }} |
            <strong>Término:</strong> {{ item.proyecto.fecha_termino|default:"—" }}</p>
         <p><strong>Descripción:</strong> {{ item.proyecto.descripcion|default:"Sin descripción" }}</p>

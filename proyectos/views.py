@@ -33,6 +33,35 @@ def crear_proyecto(request):
 
 @login_required
 @user_passes_test(es_jefe)
+def editar_proyecto(request, proyecto_id):
+    """Editar un proyecto existente. Solo accesible por el jefe del proyecto."""
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id, jefe=request.user)
+
+    if request.method == 'POST':
+        # Para evitar problemas con campos fecha obligatorios que no se muestran
+        # en el formulario (los mostramos como texto), clonamos POST y añadimos
+        # los valores actuales de las fechas para que la validación del form pase.
+        data = request.POST.copy()
+        data['fecha_inicio'] = proyecto.fecha_inicio.isoformat()
+        data['fecha_termino'] = proyecto.fecha_termino.isoformat() if proyecto.fecha_termino else ''
+
+        form = ProyectoForm(data, instance=proyecto)
+        if form.is_valid():
+            proyecto_obj = form.save(commit=False)
+            # Forzar que las fechas no cambien aunque alguien manipule el payload
+            proyecto_obj.fecha_inicio = proyecto.fecha_inicio
+            proyecto_obj.fecha_termino = proyecto.fecha_termino
+            proyecto_obj.save()
+            messages.success(request, f"Proyecto '{proyecto.nombre}' actualizado correctamente.")
+            return redirect('proyectos:panel')
+    else:
+        form = ProyectoForm(instance=proyecto)
+
+    return render(request, 'editar_proyecto.html', {'form': form, 'proyecto': proyecto})
+
+
+@login_required
+@user_passes_test(es_jefe)
 def panel_proyectos(request):
     # Separar proyectos activos y finalizados
     proyectos_activos = Proyecto.objects.filter(jefe=request.user, activo=True).prefetch_related('cuadrillas')
