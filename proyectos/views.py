@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import Proyecto
 from .forms import ProyectoForm
 from personal.models import Cuadrilla
+from django.db.models import Q
 from personal.utils_notificaciones import crear_notificacion
 from django.contrib import messages
 
@@ -60,7 +61,13 @@ def panel_proyectos(request):
 @user_passes_test(es_jefe)
 def asignar_cuadrillas(request, proyecto_id):
     proyecto = Proyecto.objects.get(id=proyecto_id, jefe=request.user)
-    cuadrillas_disponibles = Cuadrilla.objects.all()
+    # Limpiar asociaciones con proyectos finalizados: si una cuadrilla aún apunta
+    # a un proyecto que ya fue marcado como inactivo, la desasignamos.
+    Cuadrilla.objects.filter(proyecto__activo=False).update(proyecto=None)
+
+    # Cuadrillas disponibles son aquellas sin proyecto, con proyecto inactivo
+    # (ya limpiadas arriba) o que ya pertenecen a este proyecto.
+    cuadrillas_disponibles = Cuadrilla.objects.filter(Q(proyecto__isnull=True) | Q(proyecto=proyecto))
 
     if request.method == 'POST':
         seleccionadas = request.POST.getlist('cuadrillas')

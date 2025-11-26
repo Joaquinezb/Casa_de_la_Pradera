@@ -17,33 +17,8 @@ def gestionar_conversacion_cuadrilla(sender, instance, created, **kwargs):
     if not cuadrilla:
         return
 
-    # Obtener todas las asignaciones actuales de la cuadrilla
-    miembros = Asignacion.objects.filter(cuadrilla=cuadrilla)
-    total = miembros.count()
-
-    conv = Conversation.objects.filter(is_group=True, cuadrilla=cuadrilla).first()
-
-    if total >= 2:
-        # Crear conversación grupal si no existe
-        if not conv:
-            conv = Conversation.objects.create(
-                is_group=True,
-                cuadrilla=cuadrilla,
-                nombre=f"Cuadrilla {cuadrilla.nombre}"
-            )
-        # Asegurar que todos los miembros sean participantes
-        for a in miembros:
-            if a.trabajador:
-                conv.participants.add(a.trabajador)
-    else:
-        # Si hay menos de 2 miembros y existe conversación, eliminarla
-        if conv:
-            # Quitar al trabajador actual
-            if instance.trabajador:
-                conv.participants.remove(instance.trabajador)
-            # Si quedan menos de 2 participantes, eliminar la conversación
-            if conv.participants.count() < 2:
-                conv.delete()
+    # Centralizar la lógica en el modelo Conversation
+    Conversation.ensure_group_for_cuadrilla(cuadrilla, min_members=2)
 
 
 @receiver(post_delete, sender=Asignacion)
@@ -55,15 +30,5 @@ def manejar_baja_trabajador(sender, instance, **kwargs):
     if not cuadrilla:
         return
 
-    conv = Conversation.objects.filter(is_group=True, cuadrilla=cuadrilla).first()
-    if not conv:
-        return
-
-    if instance.trabajador:
-        try:
-            conv.participants.remove(instance.trabajador)
-        except Exception:
-            pass
-
-    if conv.participants.count() < 2:
-        conv.delete()
+    # Reconstruir/limpiar la conversación según el estado actual de asignaciones
+    Conversation.ensure_group_for_cuadrilla(cuadrilla, min_members=2)

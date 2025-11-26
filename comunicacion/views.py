@@ -4,17 +4,51 @@ from django.contrib.auth.models import User
 from .models import Conversation, Message, WorkerRequest, IncidentNotice
 from .forms import MessageForm, WorkerRequestForm, IncidentForm
 from django.db.models import Q
+from personal.models import Asignacion, Cuadrilla
 
 
 @login_required
 def conversations_list(request):
-    # Listar conversaciones donde participa el usuario
+    """Lista las conversaciones en las que participa el usuario y muestra
+    las cuadrillas donde participa para iniciar conversaciones privadas.
+    """
     qs = Conversation.objects.filter(participants=request.user).select_related('cuadrilla')
-    return render(request, 'comunicacion/conversations_list.html', {'conversations': qs})
+
+    # Obtener las cuadrillas donde el usuario es asignado o líder
+    from personal.models import Asignacion, Cuadrilla
+
+    cuad_ids = set(Asignacion.objects.filter(trabajador=request.user).values_list('cuadrilla_id', flat=True))
+    # Incluir las cuadrillas donde es líder
+    lider_ids = set(Cuadrilla.objects.filter(lider=request.user).values_list('id', flat=True))
+    cuad_ids |= lider_ids
+
+    mis_cuadrillas = []
+    if cuad_ids:
+        cuad_qs = Cuadrilla.objects.filter(id__in=cuad_ids)
+        for c in cuad_qs:
+            # Obtener asignaciones para esta cuadrilla y construir lista de miembros con rol
+            asigns = Asignacion.objects.filter(cuadrilla=c).select_related('trabajador', 'rol').exclude(trabajador=request.user)
+            miembros = []
+            for a in asigns:
+                miembros.append({
+                    'user': a.trabajador,
+                    'rol': a.rol.nombre if a.rol else None
+                })
+            mis_cuadrillas.append({'cuadrilla': c, 'miembros': miembros})
+
+    return render(request, 'comunicacion/conversations_list.html', {
+        'conversations': qs,
+        'mis_cuadrillas': mis_cuadrillas,
+    })
 
 
 @login_required
 def conversation_detail(request, conversation_id):
+    """Detalle de una conversación.
+
+    Verifica que el usuario sea participante antes de mostrar la conversación.
+    Maneja el envío de mensajes por POST.
+    """
     conv = get_object_or_404(Conversation, pk=conversation_id)
     if not conv.participants.filter(pk=request.user.pk).exists():
         return redirect('comunicacion:conversations_list')
@@ -43,12 +77,56 @@ def conversation_detail(request, conversation_id):
 @login_required
 def create_private_conversation(request, user_id):
     other = get_object_or_404(User, pk=user_id)
+    # Permitir mensajes privados solo entre miembros que comparten una cuadrilla
+    from personal.models import Asignacion
+
+    # Obtener cuadrillas del usuario actual y del otro
+    cuadras_mias = Asignacion.objects.filter(trabajador=request.user).values_list('cuadrilla_id', flat=True)
+    cuadras_otro = Asignacion.objects.filter(trabajador=other).values_list('cuadrilla_id', flat=True)
+
+    comparte_cuadrilla = bool(set(cuadras_mias) & set(cuadras_otro))
+
+    # Permitir también si el usuario es staff/superuser (administrador)
+    if not comparte_cuadrilla and not (request.user.is_staff or request.user.is_superuser):
+        # No autorizado a iniciar conversación privada con ese usuario
+        return redirect('comunicacion:conversations_list')
+
     # Buscar conversación privada existente entre ambos (sin grupo)
     conv = Conversation.objects.filter(is_group=False, participants=request.user).filter(participants=other).distinct().first()
     if not conv:
         conv = Conversation.objects.create(is_group=False)
         conv.participants.add(request.user, other)
     return redirect('comunicacion:conversation_detail', conversation_id=conv.pk)
+
+
+@login_required
+def miembros_cuadrilla(request):
+    """Lista y permite buscar miembros de las cuadrillas asociadas al usuario.
+
+    Muestra enlaces para iniciar conversación privada con cada miembro (si procede).
+    """
+    # Obtener cuadrillas donde el usuario tiene asignación
+    cuad_ids = set(Asignacion.objects.filter(trabajador=request.user).values_list('cuadrilla_id', flat=True))
+    # Añadir cuadrillas donde el usuario es líder
+    cuad_ids |= set(Cuadrilla.objects.filter(lider=request.user).values_list('id', flat=True))
+
+    members = User.objects.none()
+    if cuad_ids:
+        members = User.objects.filter(asignacion__cuadrilla__id__in=cuad_ids).distinct()
+
+    q = request.GET.get('q')
+    if q:
+        members = members.filter(
+            Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q)
+        )
+
+    # Excluir al propio usuario
+    members = members.exclude(pk=request.user.pk)
+
+    return render(request, 'comunicacion/miembros_cuadrilla.html', {
+        'members': members,
+        'query': q or '',
+    })
 
 
 @login_required

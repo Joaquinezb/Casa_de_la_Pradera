@@ -20,6 +20,30 @@
 </ul>
 
 <hr>
+<h3>Mi(s) Cuadrilla(s)</h3>
+{% if mis_cuadrillas %}
+    {% for item in mis_cuadrillas %}
+        <h4>{{ item.cuadrilla.nombre }}</h4>
+        <ul>
+            {% for m in item.miembros %}
+            <li>
+                {% with user=m.user %}
+                    <strong>{{ user.get_full_name|default:user.username }}</strong>
+                    {% if m.rol %} — <em>{{ m.rol }}</em>{% endif %}
+                    - <a href="{% url 'comunicacion:crear_privada' user.pk %}">Enviar privado</a>
+                {% endwith %}
+            </li>
+            {% empty %}
+            <li>No hay otros miembros en esta cuadrilla.</li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+{% else %}
+    <p>No perteneces a ninguna cuadrilla todavía.</p>
+{% endif %}
+
+
+<hr>
 
 <h3>Acciones</h3>
 <ul>

@@ -27,7 +27,8 @@ def es_jefe(user):
 @user_passes_test(es_jefe)
 def crear_cuadrilla(request):
 
-    proyectos = Proyecto.objects.filter(jefe=request.user)
+    # Mostrar solo proyectos activos al crear una cuadrilla
+    proyectos = Proyecto.objects.filter(jefe=request.user, activo=True)
 
     trabajadores = (
         Trabajador.objects.filter(activo=True)
@@ -69,7 +70,8 @@ def crear_cuadrilla(request):
 
         proyecto = None
         if proyecto_id and proyecto_id.isdigit():
-            proyecto = Proyecto.objects.filter(id=proyecto_id).first()
+            # Asegurarse de que el proyecto seleccionado esté activo y pertenezca al jefe
+            proyecto = Proyecto.objects.filter(id=proyecto_id, jefe=request.user, activo=True).first()
 
         cuadrilla = Cuadrilla.objects.create(
             nombre=nombre,
@@ -155,7 +157,8 @@ def editar_cuadrilla(request, cuadrilla_id):
 
     trabajadores = Trabajador.objects.filter(activo=True).select_related("user")
     roles = Rol.objects.all()
-    proyectos = Proyecto.objects.filter(jefe=request.user)
+    # Mostrar solo proyectos activos al editar una cuadrilla
+    proyectos = Proyecto.objects.filter(jefe=request.user, activo=True)
 
     asignaciones_actuales = {
         str(a.trabajador.id): a for a in Asignacion.objects.filter(cuadrilla=cuadrilla)
@@ -188,7 +191,8 @@ def editar_cuadrilla(request, cuadrilla_id):
         proyecto_id = request.POST.get("proyecto")
         cuadrilla.proyecto = Proyecto.objects.filter(
             id=proyecto_id,
-            jefe=request.user
+            jefe=request.user,
+            activo=True
         ).first() if proyecto_id and proyecto_id.isdigit() else None
 
         cuadrilla.save()

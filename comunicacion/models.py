@@ -24,6 +24,44 @@ class Conversation(models.Model):
             return self.nombre
         return f"Privada ({self.pk})"
 
+    def add_participants(self, users):
+        """Agregar múltiples usuarios como participantes de la conversación.
+
+        `users` puede ser un iterable de instancias `User`.
+        """
+        for u in users:
+            if u:
+                self.participants.add(u)
+
+    @classmethod
+    def ensure_group_for_cuadrilla(cls, cuadrilla, min_members=2):
+        """Crear o actualizar la conversación grupal para una `cuadrilla`.
+
+        - Si la cuadrilla tiene al menos `min_members` asignaciones, se crea (si no
+          existe) una conversación grupal vinculada y se agregan todos los participantes.
+        - Si existen menos miembros que `min_members` y ya existe conversación,
+          la conversación es eliminada.
+        Devuelve la instancia de `Conversation` creada/actualizada o `None` si no existe.
+        """
+        from personal.models import Asignacion
+
+        miembros = Asignacion.objects.filter(cuadrilla=cuadrilla)
+        total = miembros.count()
+
+        conv = cls.objects.filter(is_group=True, cuadrilla=cuadrilla).first()
+
+        if total >= min_members:
+            if not conv:
+                conv = cls.objects.create(is_group=True, cuadrilla=cuadrilla, nombre=f"Cuadrilla {cuadrilla.nombre}")
+            # Añadir todos los usuarios asignados
+            users = [a.trabajador for a in miembros if a.trabajador]
+            conv.add_participants(users)
+            return conv
+        else:
+            if conv:
+                conv.delete()
+            return None
+
 
 class Message(models.Model):
     MESSAGE_TYPES = [
@@ -43,7 +81,8 @@ class Message(models.Model):
         ordering = ['created_at']
 
     def __str__(self):
-        return f"{self.sender} @ {self.created_at}: {self.content[:40]}"
+        sender = self.sender.username if self.sender else 'Sistema'
+        return f"{sender} @ {self.created_at}: {self.content[:40]}"
 
 
 class WorkerRequest(models.Model):

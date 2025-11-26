@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Miembros de mi(s) cuadrilla(s)</h2>
+<form method="get" class="mb-3">
+    <input type="text" name="q" placeholder="Buscar por usuario/nombre/email" value="{{ query }}" />
+    <button type="submit">Buscar</button>
+</form>
+
+{% if members.exists %}
+<ul>
+    {% for u in members %}
+    <li>
+        <strong>{{ u.get_full_name|default:u.username }}</strong>
+        - <a href="{% url 'comunicacion:crear_privada' u.pk %}">Enviar mensaje privado</a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No se encontraron miembros en tus cuadrillas.</p>
+{% endif %}
+
+{% endblock %}

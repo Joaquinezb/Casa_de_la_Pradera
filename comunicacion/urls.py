@@ -7,6 +7,7 @@ urlpatterns = [
     path('', views.conversations_list, name='conversations_list'),
     path('chat/<int:conversation_id>/', views.conversation_detail, name='conversation_detail'),
     path('crear_privada/<int:user_id>/', views.create_private_conversation, name='crear_privada'),
+    path('miembros/', views.miembros_cuadrilla, name='miembros_cuadrilla'),
     path('enviar_solicitud/', views.enviar_solicitud, name='enviar_solicitud'),
     path('reportar_incidente/', views.reportar_incidente, name='reportar_incidente'),
     path('solicitudes/', views.solicitudes_list, name='solicitudes_list'),
