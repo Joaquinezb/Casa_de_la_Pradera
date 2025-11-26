@@ -58,6 +58,10 @@
 
                 <!-- NOTIFICACIONES -->
                 <li class="nav-item">
+                    <a class="nav-link" href="{% url 'comunicacion:conversations_list' %}">Comunicaci&oacute;n</a>
+                </li>
+
+                <li class="nav-item">
                     <a class="nav-link" href="{% url 'personal:mis_notificaciones' %}">
                         Notificaciones
                         {% if notifs_sin_leer > 0 %}

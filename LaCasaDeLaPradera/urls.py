@@ -33,6 +33,7 @@ urlpatterns = [
     path('proyectos/', include('proyectos.urls')),
     path('tareas/', include('tareas.urls')),
     path('recursos/', include('recursos.urls')),
+    path('comunicacion/', include('comunicacion.urls')),
 ]
 # Servir archivos media en desarrollo (DEBUG=True)
 if settings.DEBUG:

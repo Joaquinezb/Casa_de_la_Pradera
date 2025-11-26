@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Comunicación</h2>
+
+<h3>Conversaciones</h3>
+<ul>
+    {% for c in conversations %}
+    <li>
+        <a href="{% url 'comunicacion:conversation_detail' c.pk %}">
+            {% if c.is_group and c.cuadrilla %}
+                Grupo: {{ c.cuadrilla.nombre }}
+            {% else %}
+                {{ c.nombre|default:'Conversación privada' }}
+            {% endif %}
+        </a>
+    </li>
+    {% empty %}
+    <li>No tienes conversaciones activas.</li>
+    {% endfor %}
+</ul>
+
+<hr>
+
+<h3>Acciones</h3>
+<ul>
+    <li><a href="{% url 'comunicacion:enviar_solicitud' %}">Enviar solicitud</a></li>
+    <li><a href="{% url 'comunicacion:reportar_incidente' %}">Reportar incidente</a></li>
+    {% if user.groups.all|join:", " == "LiderCuadrilla" or user.groups.all|join:", " == "JefeProyecto" %}
+    <li><a href="{% url 'comunicacion:solicitudes_list' %}">Ver solicitudes de trabajadores</a></li>
+    <li><a href="{% url 'comunicacion:incidentes_list' %}">Ver incidentes reportados</a></li>
+    {% endif %}
+</ul>
+
+<hr>
+<p><a href="/">Volver al inicio</a></p>
+{% endblock %}

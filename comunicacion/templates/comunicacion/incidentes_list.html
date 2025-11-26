@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Incidentes Reportados</h2>
+
+{% if incidentes %}
+<table border="1" cellpadding="5">
+    <thead>
+        <tr>
+            <th>Reportado por</th>
+            <th>Cuadrilla</th>
+            <th>Descripción</th>
+            <th>Severidad</th>
+            <th>Fecha</th>
+            <th>Reconocido</th>
+            <th>Acción</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for incidente in incidentes %}
+        <tr>
+            <td>{{ incidente.reporter.username|default:'Anónimo' }}</td>
+            <td>{{ incidente.cuadrilla.nombre|default:'Sin cuadrilla' }}</td>
+            <td>{{ incidente.descripcion }}</td>
+            <td>
+                {% if incidente.severidad == 'low' %}
+                    <span style="color: green;">Baja</span>
+                {% elif incidente.severidad == 'medium' %}
+                    <span style="color: orange;">Media</span>
+                {% elif incidente.severidad == 'high' %}
+                    <span style="color: red;">Alta</span>
+                {% endif %}
+            </td>
+            <td>{{ incidente.created_at|date:"d/m/Y H:i" }}</td>
+            <td>
+                {% if incidente.acknowledged %}
+                    Sí
+                {% else %}
+                    <strong>No</strong>
+                {% endif %}
+            </td>
+            <td>
+                {% if not incidente.acknowledged %}
+                <form method="post" action="{% url 'comunicacion:marcar_incidente_visto' incidente.pk %}">
+                    {% csrf_token %}
+                    <button type="submit">Marcar como visto</button>
+                </form>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No hay incidentes reportados.</p>
+{% endif %}
+
+<hr>
+<p><a href="{% url 'comunicacion:conversations_list' %}">Volver a conversaciones</a></p>
+{% endblock %}

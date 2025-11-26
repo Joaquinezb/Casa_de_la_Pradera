@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Chat: {{ conversation }}</h2>
+<div class="mensajes">
+    {% for m in mensajes %}
+    <div>
+        <strong>{% if m.sender %}{{ m.sender.username }}{% else %}Sistema{% endif %}</strong> <small>{{ m.created_at }}</small>
+        <p>{{ m.content }}</p>
+    </div>
+    {% empty %}
+    <p>No hay mensajes aún.</p>
+    {% endfor %}
+</div>
+<hr>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Enviar</button>
+</form>
+{% endblock %}

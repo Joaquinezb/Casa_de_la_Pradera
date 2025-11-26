@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Solicitudes de Trabajadores</h2>
+
+{% if solicitudes %}
+<table border="1" cellpadding="5">
+    <thead>
+        <tr>
+            <th>Trabajador</th>
+            <th>Cuadrilla</th>
+            <th>Asunto</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for solicitud in solicitudes %}
+        <tr>
+            <td>{{ solicitud.trabajador.username }}</td>
+            <td>{{ solicitud.cuadrilla.nombre|default:'Sin cuadrilla' }}</td>
+            <td>{{ solicitud.asunto }}</td>
+            <td>{{ solicitud.descripcion|truncatewords:20 }}</td>
+            <td>
+                {% if solicitud.estado == 'pending' %}
+                    <span style="color: orange;">Pendiente</span>
+                {% elif solicitud.estado == 'accepted' %}
+                    <span style="color: green;">Aceptada</span>
+                {% elif solicitud.estado == 'rejected' %}
+                    <span style="color: red;">Rechazada</span>
+                {% endif %}
+            </td>
+            <td>{{ solicitud.created_at|date:"d/m/Y H:i" }}</td>
+            <td>
+                {% if solicitud.estado == 'pending' %}
+                <form method="post" action="{% url 'comunicacion:actualizar_solicitud' solicitud.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="estado" value="accepted">
+                    <button type="submit">Aceptar</button>
+                </form>
+                <form method="post" action="{% url 'comunicacion:actualizar_solicitud' solicitud.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="estado" value="rejected">
+                    <button type="submit">Rechazar</button>
+                </form>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No hay solicitudes.</p>
+{% endif %}
+
+<hr>
+<p><a href="{% url 'comunicacion:conversations_list' %}">Volver a conversaciones</a></p>
+{% endblock %}

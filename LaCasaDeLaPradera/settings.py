@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "tareas",
     "recursos",
     'personal.apps.PersonalConfig',
+    'comunicacion.apps.ComunicacionConfig',
     ]
 
 MIDDLEWARE = [
