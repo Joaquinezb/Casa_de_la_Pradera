@@ -29,10 +29,10 @@
         <label>Líder (opcional):</label><br>
         <select name="lider">
             <option value="">-- Ninguno --</option>
-            {% for t in trabajadores %}
-                {% if t.user %}
-                    <option value="{{ t.user.id }}">{{ t.nombre }} {{ t.apellido }}</option>
-                {% endif %}
+            {% for u in posibles_lideres %}
+                <option value="{{ u.id }}">{{ u.first_name }} {{ u.last_name }}{% if not u.first_name and not u.last_name %} ({{ u.username }}){% endif %}</option>
+            {% empty %}
+                <!-- No hay líderes configurados -->
             {% endfor %}
         </select>
     </div>

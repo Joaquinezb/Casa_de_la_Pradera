@@ -174,8 +174,9 @@ def solicitudes_list(request):
     # Obtener las cuadrillas donde el usuario es líder
     cuadrillas = []
     if request.user.groups.filter(name='LiderCuadrilla').exists():
-        asignaciones = Asignacion.objects.filter(trabajador=request.user, rol='lider')
-        cuadrillas = [a.cuadrilla for a in asignaciones]
+        # Los líderes vienen definidos en el FK `Cuadrilla.lider`
+        from personal.models import Cuadrilla
+        cuadrillas = list(Cuadrilla.objects.filter(lider=request.user))
     elif request.user.groups.filter(name='JefeProyecto').exists():
         # Los jefes de proyecto ven todas las solicitudes
         from personal.models import Cuadrilla
@@ -194,7 +195,8 @@ def actualizar_solicitud(request, solicitud_id):
     from personal.models import Asignacion
     tiene_permiso = False
     if request.user.groups.filter(name='LiderCuadrilla').exists():
-        if Asignacion.objects.filter(trabajador=request.user, cuadrilla=solicitud.cuadrilla, rol='lider').exists():
+        # permitir si el usuario es el líder de la cuadrilla de la solicitud
+        if solicitud.cuadrilla and solicitud.cuadrilla.lider_id == request.user.id:
             tiene_permiso = True
     elif request.user.groups.filter(name='JefeProyecto').exists():
         tiene_permiso = True
@@ -218,8 +220,8 @@ def incidentes_list(request):
     # Obtener las cuadrillas donde el usuario es líder
     cuadrillas = []
     if request.user.groups.filter(name='LiderCuadrilla').exists():
-        asignaciones = Asignacion.objects.filter(trabajador=request.user, rol='lider')
-        cuadrillas = [a.cuadrilla for a in asignaciones]
+        from personal.models import Cuadrilla
+        cuadrillas = list(Cuadrilla.objects.filter(lider=request.user))
     elif request.user.groups.filter(name='JefeProyecto').exists():
         # Los jefes de proyecto ven todos los incidentes
         from personal.models import Cuadrilla
@@ -238,7 +240,7 @@ def marcar_incidente_visto(request, incidente_id):
     from personal.models import Asignacion
     tiene_permiso = False
     if request.user.groups.filter(name='LiderCuadrilla').exists():
-        if Asignacion.objects.filter(trabajador=request.user, cuadrilla=incidente.cuadrilla, rol='lider').exists():
+        if incidente.cuadrilla and incidente.cuadrilla.lider_id == request.user.id:
             tiene_permiso = True
     elif request.user.groups.filter(name='JefeProyecto').exists():
         tiene_permiso = True

@@ -38,6 +38,9 @@ def crear_cuadrilla(request):
 
     roles = Rol.objects.all()
 
+    # Mostrar solo usuarios que pertenecen al grupo de líderes de cuadrilla
+    posibles_lideres = User.objects.filter(groups__name='LiderCuadrilla', is_active=True).distinct()
+
     # Enriquecer trabajadores
     for t in trabajadores:
 
@@ -73,10 +76,15 @@ def crear_cuadrilla(request):
             # Asegurarse de que el proyecto seleccionado esté activo y pertenezca al jefe
             proyecto = Proyecto.objects.filter(id=proyecto_id, jefe=request.user, activo=True).first()
 
+        # Validar que el líder seleccionado pertenezca al grupo 'LiderCuadrilla'
+        lider_usuario = None
+        if lider_id and lider_id.isdigit():
+            lider_usuario = User.objects.filter(id=lider_id, groups__name='LiderCuadrilla').first()
+
         cuadrilla = Cuadrilla.objects.create(
             nombre=nombre,
             proyecto=proyecto,
-            lider=User.objects.filter(id=lider_id).first() if lider_id else None
+            lider=lider_usuario
         )
 
         trabajadores_asignados = []
@@ -143,6 +151,7 @@ def crear_cuadrilla(request):
         "roles": roles,
         "especialidades": especialidades,
         "certificaciones": certificaciones,
+        "posibles_lideres": posibles_lideres,
     })
 
 
@@ -157,6 +166,7 @@ def editar_cuadrilla(request, cuadrilla_id):
 
     trabajadores = Trabajador.objects.filter(activo=True).select_related("user")
     roles = Rol.objects.all()
+    posibles_lideres = User.objects.filter(groups__name='LiderCuadrilla', is_active=True).distinct()
     # Mostrar solo proyectos activos al editar una cuadrilla
     proyectos = Proyecto.objects.filter(jefe=request.user, activo=True)
 
@@ -186,7 +196,10 @@ def editar_cuadrilla(request, cuadrilla_id):
         cuadrilla.nombre = request.POST.get("nombre")
 
         lider_id = request.POST.get("lider")
-        cuadrilla.lider = User.objects.filter(id=lider_id).first() if lider_id and lider_id.isdigit() else None
+        cuadrilla.lider = None
+        if lider_id and lider_id.isdigit():
+            # Solo asignar si el usuario pertenece al grupo de líderes de cuadrilla
+            cuadrilla.lider = User.objects.filter(id=lider_id, groups__name='LiderCuadrilla').first()
 
         proyecto_id = request.POST.get("proyecto")
         cuadrilla.proyecto = Proyecto.objects.filter(
@@ -301,6 +314,7 @@ def editar_cuadrilla(request, cuadrilla_id):
         "trabajadores": trabajadores,
         "roles": roles,
         "proyectos": proyectos,
+        "posibles_lideres": posibles_lideres,
     })
 
 
