@@ -44,8 +44,12 @@ def crear_cuadrilla(request):
     # Enriquecer trabajadores
     for t in trabajadores:
 
-        # Considerar 'ocupado' cuando el trabajador está asignado a una cuadrilla que tiene proyecto
-        t.ocupado = Asignacion.objects.filter(trabajador=t.user, cuadrilla__proyecto__isnull=False).exists() if t.user else False
+        # Priorizar override manual: si el trabajador tiene `manual_override`, respetar su estado
+        if getattr(t, 'manual_override', False):
+            t.ocupado = False
+        else:
+            # Considerar 'ocupado' cuando el trabajador está asignado a una cuadrilla que tiene proyecto
+            t.ocupado = Asignacion.objects.filter(trabajador=t.user, cuadrilla__proyecto__isnull=False).exists() if t.user else False
 
         perfil = TrabajadorPerfil.objects.filter(user=t.user).first() if t.user else None
         # Priorizar el estado manual del Trabajador si manual_override está activo, sino usar el estado efectivo del perfil
@@ -89,8 +93,12 @@ def crear_cuadrilla(request):
 
         trabajadores_asignados = []
 
-        for trabajador_id in seleccionados:
-            trabajador = Trabajador.objects.get(id=trabajador_id)
+        for trabajador_user_id in seleccionados:
+            # Ahora esperamos `user.id` enviado desde la plantilla (normalizado)
+            trabajador = Trabajador.objects.filter(user__id=trabajador_user_id).first()
+            if not trabajador:
+                # valor inválido; saltar
+                continue
 
             # calcular estado efectivo para validación server-side
             perfil_tmp = TrabajadorPerfil.objects.filter(user=trabajador.user).first() if trabajador.user else None
@@ -110,12 +118,12 @@ def crear_cuadrilla(request):
                 Trabajador.objects.filter(pk=trabajador.pk).update(user_id=user.id)
                 trabajador.user = user
 
-            # Soporta rol personalizado por trabajador: 'roles_custom_{id}'
-            rol_custom = (request.POST.get(f"roles_custom_{trabajador_id}") or '').strip()
+            # Soporta rol personalizado por trabajador: 'roles_custom_{user_id}'
+            rol_custom = (request.POST.get(f"roles_custom_{trabajador_user_id}") or '').strip()
             if rol_custom:
                 rol, _ = Rol.objects.get_or_create(nombre=rol_custom)
             else:
-                rol_id = request.POST.get(f"roles_{trabajador_id}")
+                rol_id = request.POST.get(f"roles_{trabajador_user_id}")
                 rol = Rol.objects.filter(id=rol_id).first() if rol_id and rol_id.isdigit() else None
 
             Asignacion.objects.create(
@@ -178,8 +186,12 @@ def editar_cuadrilla(request, cuadrilla_id):
         t.asignacion = asignaciones_actuales.get(str(t.user.id)) if t.user else None
 
         # Enriquecer información para mostrar estado y certificaciones
-        # Considerar 'ocupado' cuando el trabajador está asignado a una cuadrilla que tiene proyecto
-        t.ocupado = Asignacion.objects.filter(trabajador=t.user, cuadrilla__proyecto__isnull=False).exists() if t.user else False
+        # Priorizar override manual: si el trabajador tiene `manual_override`, respetar su estado
+        if getattr(t, 'manual_override', False):
+            t.ocupado = False
+        else:
+            # Considerar 'ocupado' cuando el trabajador está asignado a una cuadrilla que tiene proyecto
+            t.ocupado = Asignacion.objects.filter(trabajador=t.user, cuadrilla__proyecto__isnull=False).exists() if t.user else False
         perfil = TrabajadorPerfil.objects.filter(user=t.user).first() if t.user else None
         # Priorizar el estado manual del Trabajador si manual_override está activo, sino usar el estado efectivo del perfil
         t.estado_real = t.estado if getattr(t, 'manual_override', False) else (perfil.estado_efectivo if perfil else 'disponible')
@@ -210,16 +222,26 @@ def editar_cuadrilla(request, cuadrilla_id):
 
         cuadrilla.save()
 
-        seleccionados = set(request.POST.getlist("trabajadores"))
+        # Si el formulario no envía ningún 'trabajadores', asumimos que no hubo cambios
+        # (evita eliminar asignaciones por errores de envío del formulario/front-end).
+        raw_seleccionados = request.POST.getlist("trabajadores")
+        if not raw_seleccionados:
+            return redirect("proyectos:panel")
+
+        seleccionados = set(raw_seleccionados)
         restantes = asignaciones_actuales.copy()
 
         agregados = []
         removidos = []
         cambios_rol = []
 
-        for trabajador_id in seleccionados:
+        for trabajador_user_id in seleccionados:
 
-            trabajador_obj = Trabajador.objects.get(id=trabajador_id)
+            # Ahora esperamos `user.id` enviado desde la plantilla (normalizado)
+            trabajador_obj = Trabajador.objects.filter(user__id=trabajador_user_id).first()
+            if not trabajador_obj:
+                # valor inválido; saltar
+                continue
 
             # validar estado efectivo y evitar asignar si está en licencia/vacaciones/no_disponible
             perfil_tmp = TrabajadorPerfil.objects.filter(user=trabajador_obj.user).first() if trabajador_obj.user else None
@@ -241,12 +263,12 @@ def editar_cuadrilla(request, cuadrilla_id):
             user = trabajador_obj.user
             clave = str(user.id)
 
-            # Soporta rol personalizado por trabajador: 'roles_custom_{id}'
-            rol_custom = (request.POST.get(f"roles_custom_{trabajador_id}") or '').strip()
+            # Soporta rol personalizado por trabajador: 'roles_custom_{user_id}'
+            rol_custom = (request.POST.get(f"roles_custom_{trabajador_user_id}") or '').strip()
             if rol_custom:
                 rol, _ = Rol.objects.get_or_create(nombre=rol_custom)
             else:
-                rol_id = request.POST.get(f"roles_{trabajador_id}")
+                rol_id = request.POST.get(f"roles_{trabajador_user_id}")
                 rol = Rol.objects.filter(id=rol_id).first() if rol_id and rol_id.isdigit() else None
 
             if clave in restantes:
@@ -267,9 +289,17 @@ def editar_cuadrilla(request, cuadrilla_id):
                 )
                 agregados.append((user, rol))
 
-        for asign in restantes.values():
-            removidos.append((asign.trabajador, cuadrilla))
-            asign.delete()
+        # Seguridad: si por alguna razón se va a eliminar todas las asignaciones
+        # y no hay agregados ni cambios de rol, abortar la operación para evitar
+        # pérdida accidental de datos (posible fallo del frontend).
+        to_delete = list(restantes.values())
+        if len(to_delete) == len(asignaciones_actuales) and not agregados and not cambios_rol:
+            # No realizar cambios en asignaciones; mantener estado actual
+            pass
+        else:
+            for asign in to_delete:
+                removidos.append((asign.trabajador, cuadrilla))
+                asign.delete()
 
         # NOTIFICACIONES
         if lider_anterior != cuadrilla.lider:
@@ -482,6 +512,13 @@ def editar_estado_trabajador(request, trabajador_id):
 
     if request.method == "POST":
         nuevo_estado = request.POST.get("estado_manual")
+
+        # Opción para volver al modo automático
+        if nuevo_estado == 'automatic' or nuevo_estado == '' or nuevo_estado is None:
+            # Desactivar override manual; el estado será calculado automáticamente
+            trabajador.manual_override = False
+            trabajador.save()
+            return redirect("personal:detalle_trabajador", trabajador.id)
 
         if nuevo_estado in ["disponible", "asignado", "vacaciones", "licencia", "inactivo", "no_disponible"]:
             # Asegurar que exista perfil

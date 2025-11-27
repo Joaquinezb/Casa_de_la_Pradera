@@ -3,37 +3,37 @@
 
 <h2>Editar estado de {{ trabajador.nombre }} {{ trabajador.apellido }}</h2>
 
-<form method="post">
-    {% csrf_token %}
+    <form method="post">
+        {% csrf_token %}
 
-    <label>Estado manual:</label>
-    <select name="estado_manual">
+        <label>Estado manual:</label>
+        <select name="estado_manual">
 
-        <option value="disponible" 
-            {% if perfil.estado_manual == 'disponible' %}selected{% endif %}>
-            Disponible
-        </option>
+            <option value="automatic" {% if not trabajador.manual_override %}selected{% endif %}>
+                Automático (según asignaciones/proyecto)
+            </option>
 
-        <option value="no_disponible"
-            {% if perfil.estado_manual == 'no_disponible' %}selected{% endif %}>
-            No disponible
-        </option>
+            <option value="disponible" {% if trabajador.manual_override and perfil and perfil.estado_manual == 'disponible' %}selected{% endif %}>
+                Disponible
+            </option>
 
-        <option value="licencia"
-            {% if perfil.estado_manual == 'licencia' %}selected{% endif %}>
-            Licencia médica
-        </option>
+            <option value="no_disponible" {% if trabajador.manual_override and perfil and perfil.estado_manual == 'no_disponible' %}selected{% endif %}>
+                No disponible
+            </option>
 
-        <option value="vacaciones"
-            {% if perfil.estado_manual == 'vacaciones' %}selected{% endif %}>
-            Vacaciones
-        </option>
+            <option value="licencia" {% if trabajador.manual_override and perfil and perfil.estado_manual == 'licencia' %}selected{% endif %}>
+                Licencia médica
+            </option>
 
-    </select>
+            <option value="vacaciones" {% if trabajador.manual_override and perfil and perfil.estado_manual == 'vacaciones' %}selected{% endif %}>
+                Vacaciones
+            </option>
 
-    <br><br>
-    <button class="btn btn-primary">Guardar cambios</button>
-</form>
+        </select>
 
-<a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-3">Volver al Panel</a>
-{% endblock %}
+        <br><br>
+        <button class="btn btn-primary">Guardar cambios</button>
+    </form>
+
+    <a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-3">Volver al Panel</a>
+    {% endblock %}

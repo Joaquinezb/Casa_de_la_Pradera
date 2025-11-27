@@ -119,13 +119,17 @@
 
             <!-- Checkbox -->
             <td>
-                {% if t.ocupado or t.estado_real == 'licencia' or t.estado_real == 'vacaciones' or t.estado_real == 'no_disponible' %}
+                {% if not t.user %}
                     <input type="checkbox" disabled>
                 {% else %}
-                    <input class="trabajador-checkbox"
-                        type="checkbox"
-                        name="trabajadores"
-                        value="{{ t.id }}">
+                    {% if t.ocupado or t.estado_real == 'licencia' or t.estado_real == 'vacaciones' or t.estado_real == 'no_disponible' %}
+                        <input type="checkbox" disabled>
+                    {% else %}
+                        <input class="trabajador-checkbox"
+                            type="checkbox"
+                            name="trabajadores"
+                            value="{{ t.user.id }}">
+                    {% endif %}
                 {% endif %}
             </td>
 
@@ -163,19 +167,19 @@
 
             <!-- Rol -->
             <td>
-                {% if t.ocupado or t.estado_real == 'licencia' or t.estado_real == 'vacaciones' or t.estado_real == 'no_disponible' %}
-                    <select disabled class="form-control">
-                        <option>—</option>
-                    </select>
-                    <input type="text" class="form-control mt-1" disabled placeholder="Nuevo rol (opcional)">
-                {% else %}
-                    <select name="roles_{{ t.id }}" class="form-control rol-select">
+                    {% if t.ocupado or t.estado_real == 'licencia' or t.estado_real == 'vacaciones' or t.estado_real == 'no_disponible' %}
+                        <select disabled class="form-control">
+                            <option>—</option>
+                        </select>
+                        <input type="text" class="form-control mt-1" disabled placeholder="Nuevo rol (opcional)">
+                    {% else %}
+                        <select name="roles_{{ t.user.id }}" class="form-control rol-select">
                         <option value="">-- Rol --</option>
                         {% for r in roles %}
                             <option value="{{ r.id }}">{{ r.nombre }}</option>
                         {% endfor %}
                     </select>
-                    <input type="text" name="roles_custom_{{ t.id }}" class="form-control mt-1" placeholder="Nuevo rol (opcional)">
+                        <input type="text" name="roles_custom_{{ t.user.id }}" class="form-control mt-1" placeholder="Nuevo rol (opcional)">
                 {% endif %}
             </td>
 
