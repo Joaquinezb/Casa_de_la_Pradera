@@ -792,6 +792,12 @@ def editar_estado_trabajador(request, trabajador_id):
             # Desactivar override manual; el estado será calculado automáticamente
             trabajador.manual_override = False
             trabajador.save()
+            
+            # IMPORTANTE: Limpiar estado_manual en perfil para evitar persistencia incorrecta
+            if perfil:
+                perfil.estado_manual = 'disponible'
+                perfil.save()
+            
             return redirect("personal:detalle_trabajador", trabajador.id)
 
         if nuevo_estado in [

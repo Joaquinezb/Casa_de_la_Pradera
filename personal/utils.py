@@ -307,8 +307,8 @@ def actualizar_estado_trabajador_al_quitar(trabajador_user):
     """
     Actualiza el estado de un trabajador cuando es quitado de una cuadrilla.
     
-    Si el trabajador tenía override manual con estado especial (vacaciones, 
-    licencia, etc), lo devuelve a modo automático y disponible.
+    Limpia el manual_override y resetea estado_manual a 'disponible' en el perfil
+    para evitar que estados temporales (vacaciones, licencia) persistan incorrectamente.
     
     Args:
         trabajador_user: Instancia de User asociada al trabajador
@@ -319,17 +319,17 @@ def actualizar_estado_trabajador_al_quitar(trabajador_user):
         if not trabajador_profile:
             return
         
-        # Si está en modo manual con estado especial, devolver a automático
-        if (getattr(trabajador_profile, 'manual_override', False) and 
-            trabajador_profile.estado in EstadosTrabajador.ESTADOS_ESPECIALES):
+        # Desactivar override manual
+        if getattr(trabajador_profile, 'manual_override', False):
             trabajador_profile.manual_override = False
             trabajador_profile.estado = EstadosTrabajador.DISPONIBLE
             trabajador_profile.save()
         
-        # Si no tiene override manual, poner disponible
-        elif not getattr(trabajador_profile, 'manual_override', False):
-            trabajador_profile.estado = EstadosTrabajador.DISPONIBLE
-            trabajador_profile.save()
+        # Limpiar estado_manual en TrabajadorPerfil para evitar persistencia incorrecta
+        perfil = TrabajadorPerfil.objects.filter(user=trabajador_user).first()
+        if perfil:
+            perfil.estado_manual = 'disponible'
+            perfil.save()
             
     except Exception as e:
         # Log del error pero no interrumpir el flujo
