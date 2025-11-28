@@ -41,6 +41,8 @@ def conversations_list(request):
 
     # Si el usuario es Jefe de Proyecto, obtener líderes de cuadrillas de sus proyectos
     is_jefe = es_jefe_proyecto(request.user)
+    # Determinar si el usuario es líder de alguna cuadrilla
+    is_lider = Cuadrilla.objects.filter(lider=request.user).exists()
     lideres_proyecto = []
     if is_jefe:
         proyectos_cuadrillas = Cuadrilla.objects.filter(proyecto__jefe=request.user)
@@ -53,6 +55,7 @@ def conversations_list(request):
         'mis_cuadrillas': mis_cuadrillas,
         'lideres_proyecto': lideres_proyecto,
         'is_jefe': is_jefe,
+        'is_lider': is_lider,
     })
 
 
@@ -122,7 +125,12 @@ def create_private_conversation(request, user_id):
     if not permitido:
         return redirect('comunicacion:conversations_list')
 
-    conv = Conversation.objects.filter(is_group=False, participants=request.user).filter(participants=other).distinct().first()
+    # Buscar conversación privada activa (no archivada) entre ambos
+    conv = Conversation.objects.filter(
+        is_group=False,
+        archived=False,
+        participants=request.user
+    ).filter(participants=other).distinct().first()
     if not conv:
         conv = Conversation.objects.create(is_group=False)
         conv.participants.add(request.user, other)

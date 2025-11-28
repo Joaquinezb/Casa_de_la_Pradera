@@ -162,6 +162,11 @@ def archive_conversation(conversation, archived_by=None, reason=''):
     if getattr(conversation, 'archived', False):
         return None
 
+    # No archivar conversaciones con menos de 2 mensajes
+    total_msgs = conversation.mensajes.count()
+    if total_msgs < 2:
+        return None
+
     # Serializar mensajes mínimos
     msgs = []
     for m in conversation.mensajes.all().order_by('created_at'):
