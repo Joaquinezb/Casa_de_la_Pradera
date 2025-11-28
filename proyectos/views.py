@@ -137,13 +137,58 @@ def panel_proyectos(request):
 
     # LiderCuadrilla: ver proyectos donde tiene cuadrillas asignadas
     if user.groups.filter(name='LiderCuadrilla').exists():
-        proyectos = Proyecto.objects.filter(cuadrillas__lider=user).distinct()
+        # Obtener proyectos donde el líder tiene cuadrillas asignadas (activos y finalizados)
+        proyectos_activos = Proyecto.objects.filter(cuadrillas__lider=user, activo=True).distinct().prefetch_related('cuadrillas')
+        proyectos_finalizados = Proyecto.objects.filter(cuadrillas__lider=user, activo=False).distinct().prefetch_related('cuadrillas')
+
         data = []
-        for p in proyectos:
-            # Mostrar todas las cuadrillas del proyecto en modo lectura
+        for p in proyectos_activos:
+            # Mostrar TODAS las cuadrillas del proyecto (lectura)
             cuadrillas = Cuadrilla.objects.filter(proyecto=p)
-            data.append({'proyecto': p, 'cuadrillas': cuadrillas})
-        return render(request, 'panel.html', {'data': data, 'readonly': True})
+            cuad_list = []
+            for c in cuadrillas:
+                cuad_list.append({
+                    'cuadrilla': c,
+                    # Solo puede editar su propia cuadrilla
+                    'can_edit': (c.lider_id == user.id),
+                })
+
+            data.append({
+                'proyecto': p,
+                'cuadrillas': cuad_list,
+                # Líder NO puede editar proyecto, asignar cuadrillas, finalizar ni crear cuadrillas
+                'can_edit_project': False,
+                'can_assign': False,
+                'can_finalize': False,
+                'can_create_cuadrilla': False,
+            })
+
+        finalizados = []
+        for p in proyectos_finalizados:
+            cuadrillas = Cuadrilla.objects.filter(proyecto=p)
+            cuad_list = []
+            for c in cuadrillas:
+                cuad_list.append({
+                    'cuadrilla': c,
+                    'can_edit': (c.lider_id == user.id),
+                })
+            finalizados.append({'proyecto': p, 'cuadrillas': cuad_list, 'can_edit_project': False})
+
+        # Líder también puede ver sus cuadrillas sin proyecto asignado
+        cuadrillas_sin_proyecto = []
+        for c in Cuadrilla.objects.filter(proyecto__isnull=True, lider=user):
+            cuadrillas_sin_proyecto.append({
+                'cuadrilla': c,
+                'can_edit': True,
+                'can_disolver': True,
+            })
+
+        return render(request, 'panel.html', {
+            'data': data,
+            'finalizados': finalizados,
+            'cuadrillas_sin_proyecto': cuadrillas_sin_proyecto,
+            'is_lider_view': True,
+        })
 
     # Trabajador: mostrar solo el proyecto de su cuadrilla actual (si tiene)
     from personal.models import Asignacion

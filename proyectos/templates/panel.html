@@ -2,7 +2,9 @@
 {% block content %}
 <h2>Panel de Gestión de Proyectos</h2>
 
+{% if is_jefe_view %}
 <a href="{% url 'proyectos:nuevo' %}" class="btn btn-primary">+ Nuevo Proyecto</a>
+{% endif %}
 
 {% if is_jefe_view %}
 <div class="alert alert-info mt-3">
@@ -30,6 +32,12 @@
             {% endfor %}
         </select>
     </div>
+</div>
+{% endif %}
+
+{% if is_lider_view %}
+<div class="alert alert-warning mt-3">
+    <strong>Vista Líder:</strong> Proyectos donde lideras cuadrilla(s). Puedes ver toda la información del proyecto y todas sus cuadrillas; editar solo tu(s) propia(s) cuadrilla(s) y gestionar trabajadores de tu cuadrilla.
 </div>
 {% endif %}
 
