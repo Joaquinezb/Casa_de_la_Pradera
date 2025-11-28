@@ -56,9 +56,15 @@
                     </li>
                 {% endif %}
 
-                <!-- NOTIFICACIONES -->
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'comunicacion:conversations_list' %}">Comunicaci&oacute;n</a>
+                <!-- COMUNICACIÓN: dropdown con accesos directos -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="comunicacionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Comunicaci&oacute;n
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="comunicacionDropdown">
+                        <li><a class="dropdown-item" href="{% url 'comunicacion:conversations_list' %}">Conversaciones</a></li>
+                        <li><a class="dropdown-item" href="{% url 'comunicacion:archived_list' %}">Archivadas</a></li>
+                    </ul>
                 </li>
 
                 <li class="nav-item">

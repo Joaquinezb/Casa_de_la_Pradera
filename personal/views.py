@@ -11,6 +11,7 @@ from .models import (
     Notificacion,
 )
 from .utils_notificaciones import crear_notificacion
+from comunicacion.models import archive_conversation
 
 
 # -----------------------------------------------------
@@ -30,16 +31,28 @@ def crear_cuadrilla(request):
     # Mostrar solo proyectos activos al crear una cuadrilla
     proyectos = Proyecto.objects.filter(jefe=request.user, activo=True)
 
+    # Mostrar solo trabajadores de tipo 'trabajador' (excluir líderes y jefes)
     trabajadores = (
-        Trabajador.objects.filter(activo=True)
+        Trabajador.objects.filter(activo=True, tipo_trabajador='trabajador')
         .select_related("user")
         .prefetch_related("certificaciones_trabajador")
     )
 
     roles = Rol.objects.all()
 
-    # Mostrar solo usuarios que pertenecen al grupo de líderes de cuadrilla
-    posibles_lideres = User.objects.filter(groups__name='LiderCuadrilla', is_active=True).distinct()
+    # Preparar lista de líderes para el selector: incluimos todos los usuarios
+    # del grupo 'LiderCuadrilla' y marcamos cuáles están ocupados (lideran una
+    # cuadrilla con proyecto). En el formulario de creación los ocupados se
+    # mostrarán pero no serán seleccionables.
+    posibles_lideres_qs = User.objects.filter(groups__name='LiderCuadrilla', is_active=True).distinct()
+    posibles_lideres = []
+    for u in posibles_lideres_qs:
+        ocupado = Cuadrilla.objects.filter(lider=u, proyecto__isnull=False).exists()
+        posibles_lideres.append({
+            'user': u,
+            'ocupado': ocupado,
+            'selectable': not ocupado,
+        })
 
     # Enriquecer trabajadores
     for t in trabajadores:
@@ -81,15 +94,35 @@ def crear_cuadrilla(request):
             proyecto = Proyecto.objects.filter(id=proyecto_id, jefe=request.user, activo=True).first()
 
         # Validar que el líder seleccionado pertenezca al grupo 'LiderCuadrilla'
-        lider_usuario = None
-        if lider_id and lider_id.isdigit():
-            lider_usuario = User.objects.filter(id=lider_id, groups__name='LiderCuadrilla').first()
+            lider_usuario = None
+            if lider_id and lider_id.isdigit():
+                lider_usuario = User.objects.filter(id=lider_id, groups__name='LiderCuadrilla').first()
 
-        cuadrilla = Cuadrilla.objects.create(
-            nombre=nombre,
-            proyecto=proyecto,
-            lider=lider_usuario
-        )
+            # Validación: un Líder no puede liderar más de una cuadrilla activa
+            errors = []
+            if lider_usuario:
+                lider_conflict = Cuadrilla.objects.filter(lider=lider_usuario, proyecto__isnull=False).exists()
+                if lider_conflict:
+                    errors.append('El usuario seleccionado ya lidera otra cuadrilla asociada a un proyecto activo.')
+
+            if errors:
+                # En caso de error, re-renderizar el formulario con los mensajes
+                return render(request, 'cuadrilla_form.html', {
+                    'proyectos': proyectos,
+                    'trabajadores': trabajadores,
+                    'roles': roles,
+                    'especialidades': especialidades,
+                    'certificaciones': certificaciones,
+                    'posibles_lideres': posibles_lideres,
+                    'errors': errors,
+                    'nombre': nombre,
+                })
+
+            cuadrilla = Cuadrilla.objects.create(
+                nombre=nombre,
+                proyecto=proyecto,
+                lider=lider_usuario
+            )
 
         trabajadores_asignados = []
 
@@ -172,9 +205,24 @@ def editar_cuadrilla(request, cuadrilla_id):
 
     cuadrilla = get_object_or_404(Cuadrilla, id=cuadrilla_id)
 
-    trabajadores = Trabajador.objects.filter(activo=True).select_related("user")
+    # Mostrar solo trabajadores de tipo 'trabajador' (excluir líderes y jefes)
+    trabajadores = Trabajador.objects.filter(activo=True, tipo_trabajador='trabajador').select_related("user")
     roles = Rol.objects.all()
-    posibles_lideres = User.objects.filter(groups__name='LiderCuadrilla', is_active=True).distinct()
+    # Preparar lista de líderes para el selector en edición: incluimos todos
+    # y marcamos ocupados; sin embargo permitimos que el `cuadrilla.lider`
+    # actual sea seleccionable incluso si su cuadrilla está asociada a un
+    # proyecto (para poder conservar la selección al editar).
+    posibles_lideres_qs = User.objects.filter(groups__name='LiderCuadrilla', is_active=True).distinct()
+    posibles_lideres = []
+    for u in posibles_lideres_qs:
+        ocupado = Cuadrilla.objects.filter(lider=u, proyecto__isnull=False).exclude(id=cuadrilla.id).exists()
+        # Si el usuario es el líder actual de la cuadrilla, permitir seleccionarlo
+        selectable = (not ocupado) or (cuadrilla.lider and u.id == cuadrilla.lider.id)
+        posibles_lideres.append({
+            'user': u,
+            'ocupado': ocupado and not (cuadrilla.lider and u.id == cuadrilla.lider.id),
+            'selectable': selectable,
+        })
     # Mostrar solo proyectos activos al editar una cuadrilla
     proyectos = Proyecto.objects.filter(jefe=request.user, activo=True)
 
@@ -211,7 +259,25 @@ def editar_cuadrilla(request, cuadrilla_id):
         cuadrilla.lider = None
         if lider_id and lider_id.isdigit():
             # Solo asignar si el usuario pertenece al grupo de líderes de cuadrilla
-            cuadrilla.lider = User.objects.filter(id=lider_id, groups__name='LiderCuadrilla').first()
+            posible_lider = User.objects.filter(id=lider_id, groups__name='LiderCuadrilla').first()
+
+            # Validación: el líder no debe liderar otra cuadrilla activa distinta a esta
+            if posible_lider:
+                conflicto = Cuadrilla.objects.filter(lider=posible_lider, proyecto__isnull=False).exclude(id=cuadrilla.id).exists()
+                if conflicto:
+                    errors = [
+                        'El usuario seleccionado ya lidera otra cuadrilla asociada a un proyecto activo.'
+                    ]
+                    # Re-renderizar formulario con error y contexto actual
+                    return render(request, 'cuadrilla_editar.html', {
+                        'cuadrilla': cuadrilla,
+                        'trabajadores': trabajadores,
+                        'roles': roles,
+                        'proyectos': proyectos,
+                        'posibles_lideres': posibles_lideres,
+                        'errors': errors,
+                    })
+            cuadrilla.lider = posible_lider
 
         proyecto_id = request.POST.get("proyecto")
         cuadrilla.proyecto = Proyecto.objects.filter(
@@ -289,17 +355,16 @@ def editar_cuadrilla(request, cuadrilla_id):
                 )
                 agregados.append((user, rol))
 
-        # Seguridad: si por alguna razón se va a eliminar todas las asignaciones
-        # y no hay agregados ni cambios de rol, abortar la operación para evitar
-        # pérdida accidental de datos (posible fallo del frontend).
-        to_delete = list(restantes.values())
-        if len(to_delete) == len(asignaciones_actuales) and not agregados and not cambios_rol:
-            # No realizar cambios en asignaciones; mantener estado actual
-            pass
-        else:
-            for asign in to_delete:
-                removidos.append((asign.trabajador, cuadrilla))
-                asign.delete()
+        # Nota: NO eliminamos automáticamente las asignaciones que el usuario
+        # no vuelva a seleccionar en el formulario de edición. El flujo de
+        # 'editar cuadrilla' aquí añade nuevos trabajadores y actualiza roles
+        # cuando corresponde, pero la eliminación explícita de un trabajador
+        # debe realizarse mediante la acción dedicada `quitar_trabajador`.
+        #
+        # Conservamos `restantes` sin borrarlas para evitar comportamientos
+        # sorpresa donde una edición parcial (p. ej. añadir un trabajador)
+        # borre las asignaciones previas.
+        to_delete = []
 
         # NOTIFICACIONES
         if lider_anterior != cuadrilla.lider:
@@ -454,6 +519,14 @@ def disolver_cuadrilla(request, cuadrilla_id):
     lider = cuad.lider
     nombre = cuad.nombre
 
+    # Archivado: antes de borrar la cuadrilla, archivar su conversación de grupo si existe
+    try:
+        conv = getattr(cuad, 'conversaciones').first()
+        if conv:
+            archive_conversation(conv, archived_by=request.user, reason=f"Disolución de cuadrilla '{nombre}'")
+    except Exception:
+        pass
+
     # Borrar la cuadrilla (cascade eliminará asignaciones)
     cuad.delete()
 
@@ -466,6 +539,62 @@ def disolver_cuadrilla(request, cuadrilla_id):
         crear_notificacion(lider, f"La cuadrilla '{nombre}' que liderabas ha sido disuelta.")
 
     return redirect('proyectos:panel')
+
+
+
+@login_required
+@user_passes_test(es_jefe)
+def quitar_trabajador(request):
+    """
+    Quitar un trabajador de su cuadrilla actual.
+
+    Espera POST con 'asignacion_id'. Elimina la Asignacion correspondiente,
+    ajusta el estado del `Trabajador` a 'disponible' si no tiene `manual_override`,
+    y crea notificaciones para el trabajador y el líder de la cuadrilla.
+
+    Preparación para archivado: aquí podríamos marcar metadatos para archivar
+    el historial de asignación en el futuro.
+    """
+    if request.method != 'POST':
+        return redirect('proyectos:panel')
+
+    asignacion_id = request.POST.get('asignacion_id')
+    asign = Asignacion.objects.filter(id=asignacion_id).first()
+    if not asign:
+        return redirect('personal:detalle_cuadrilla', None)
+
+    cuadrilla = asign.cuadrilla
+    trabajador_user = asign.trabajador
+
+    # Capturar datos antes de eliminar
+    lider = cuadrilla.lider
+    nombre_cuadrilla = cuadrilla.nombre
+
+    # Eliminar la asignación
+    asign.delete()
+
+    # Ajustar estado del Trabajador: si no tiene override manual, poner 'disponible'
+    try:
+        trabajador_profile = getattr(trabajador_user, 'trabajador_profile', None)
+        if trabajador_profile and not getattr(trabajador_profile, 'manual_override', False):
+            # trabajador_profile here is actually Trabajador model on this project
+            trabajador_profile.estado = 'disponible'
+            trabajador_profile.save()
+    except Exception:
+        # Silenciar errores no críticos de actualización de estado
+        pass
+
+    # Notificar al trabajador
+    crear_notificacion(trabajador_user, f"Has sido removido de la cuadrilla '{nombre_cuadrilla}'. Ahora estás sin cuadrilla.")
+
+    # Notificar al líder de la cuadrilla si aplica
+    if lider:
+        crear_notificacion(lider, f"El trabajador {trabajador_user.get_full_name()} ha sido removido de tu cuadrilla '{nombre_cuadrilla}'.")
+
+    # Preparación para archivado: aquí podríamos crear un registro en una tabla
+    # de historial de asignaciones si se implementa más adelante.
+
+    return redirect('personal:detalle_cuadrilla', cuadrilla.id)
 
 
 # =====================================================

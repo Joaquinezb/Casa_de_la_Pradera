@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from .models import Conversation, Message, WorkerRequest, IncidentNotice
+from .models import ChatArchivado
 from .forms import MessageForm, WorkerRequestForm, IncidentForm
 from django.db.models import Q
 from personal.models import Asignacion, Cuadrilla
@@ -230,6 +231,105 @@ def incidentes_list(request):
     # Filtrar incidentes de esas cuadrillas
     incidentes = IncidentNotice.objects.filter(cuadrilla__in=cuadrillas).select_related('reporter', 'cuadrilla')
     return render(request, 'comunicacion/incidentes_list.html', {'incidentes': incidentes})
+
+
+@login_required
+def archived_chats_list(request):
+    """Lista de chats archivados accesibles para el usuario.
+
+    Reglas simples de permiso:
+    - Chats personales: accesibles si el usuario fue participante.
+    - Chats grupales: accesibles si el usuario fue participante o es líder/jefe
+      del proyecto/cuadrilla asociada.
+    """
+    from django.db.models import Q
+
+    qs = ChatArchivado.objects.filter(
+        Q(conversation__participants=request.user) |
+        Q(conversation__cuadrilla__lider=request.user) |
+        Q(archived_by=request.user)
+    ).distinct()
+
+    # Además: si la conversación original fue eliminada tras el archivado,
+    # `conversation` puede ser NULL y la búsqueda por relaciones fallará.
+    # En ese caso buscamos en los snapshots JSON aquellos archivos donde
+    # el usuario aparece en `participants_snapshot` (preferente) o como
+    # `sender_id` en los mensajes. Esto cubre casos donde la conversación
+    # fue borrada y aun así debe estar accesible para los participantes originales.
+    import json
+    extra = []
+    null_convs = ChatArchivado.objects.filter(conversation__isnull=True)
+    for a in null_convs:
+        added = False
+        # Preferente: comprobar participants_snapshot
+        try:
+            parts = json.loads(a.participants_snapshot or '[]')
+            if isinstance(parts, (list, tuple)) and request.user.id in parts:
+                extra.append(a)
+                added = True
+        except Exception:
+            pass
+        if added:
+            continue
+        # Fallback: comprobar sender_id dentro de messages_snapshot
+        try:
+            msgs = json.loads(a.messages_snapshot or '[]')
+        except Exception:
+            msgs = []
+        sender_ids = {m.get('sender_id') for m in msgs if m.get('sender_id') is not None}
+        if request.user.id in sender_ids:
+            extra.append(a)
+
+    # Combinar queryset y lista de objetos extra (convertir queryset a lista)
+    archivos = list(qs) + extra
+
+    return render(request, 'comunicacion/archived_list.html', {'archivos': archivos})
+
+
+@login_required
+def archived_chat_detail(request, archivo_id):
+    archivo = get_object_or_404(ChatArchivado, pk=archivo_id)
+
+    # Permisos: permitir si el usuario participó en la conversación original,
+    # o si es líder de la cuadrilla asociada, o si fue quien archivó.
+    conv = archivo.conversation
+    allowed = False
+    if conv:
+        if conv.participants.filter(pk=request.user.pk).exists():
+            allowed = True
+        if conv.cuadrilla and conv.cuadrilla.lider_id == request.user.id:
+            allowed = True
+    if archivo.archived_by_id == request.user.id:
+        allowed = True
+    # Si no está permitido por relaciones directas, comprobar si el usuario
+    # aparece en el snapshot de mensajes (útil cuando la Conversation fue
+    # eliminada tras el archivado y no quedan relaciones). Esto permite que
+    # participantes originales sigan accediendo.
+    if not allowed:
+        try:
+            import json
+            msgs_tmp = json.loads(archivo.messages_snapshot or '[]')
+            sender_ids = {m.get('sender_id') for m in msgs_tmp if m.get('sender_id') is not None}
+            if request.user.id in sender_ids:
+                allowed = True
+        except Exception:
+            pass
+
+    if not allowed and not (request.user.is_staff or request.user.is_superuser):
+        return redirect('comunicacion:conversations_list')
+
+    # Parsear snapshot de mensajes
+    import json
+    try:
+        mensajes = json.loads(archivo.messages_snapshot or '[]')
+    except Exception:
+        mensajes = []
+
+    return render(request, 'comunicacion/archived_detail.html', {
+        'archivo': archivo,
+        'mensajes': mensajes,
+    })
+
 
 
 @login_required

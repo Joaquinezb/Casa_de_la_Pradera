@@ -151,6 +151,13 @@
                     <button type="submit" class="btn btn-sm btn-outline-primary mt-1">Mover</button>
                 </form>
             </td>
+            <td>
+                <form method="post" action="{% url 'personal:quitar_trabajador' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="asignacion_id" value="{{ a.id }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger mt-1" onclick="return confirm('¿Seguro que quieres quitar este trabajador de la cuadrilla?')">Quitar</button>
+                </form>
+            </td>
             {% endif %}
 
         </tr>

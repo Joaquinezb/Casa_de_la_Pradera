@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Archivo de Chat {{ archivo.id }}</h2>
+<p><strong>Conversación:</strong> {% if archivo.conversation %}{{ archivo.conversation }}{% else %}<em>Conversación eliminada</em>{% endif %}</p>
+<p><strong>Archivado:</strong> {{ archivo.archived_at }}{% if archivo.reason %} — {{ archivo.reason }}{% endif %}</p>
+<p><strong>Archivado por:</strong> {% if archivo.archived_by %}{{ archivo.archived_by.username }}{% else %}—{% endif %}</p>
+
+<hr>
+<h3>Mensajes (snapshot)</h3>
+{% if mensajes %}
+    <ul class="list-group">
+    {% for m in mensajes %}
+        <li class="list-group-item">
+            <strong>{{ m.sender_username }}</strong> <small class="text-muted">{{ m.created_at }}</small>
+            <div>{{ m.content }}</div>
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No hay mensajes archivados.</p>
+{% endif %}
+
+<a href="{% url 'comunicacion:archived_list' %}" class="btn btn-secondary mt-3">Volver</a>
+
+{% endblock %}

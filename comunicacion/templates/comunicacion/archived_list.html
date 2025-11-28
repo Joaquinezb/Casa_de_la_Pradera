@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Chats Archivados</h2>
+
+{% if archivos %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Conversación</th>
+            <th>Archivado</th>
+            <th>Por</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for a in archivos %}
+        <tr>
+            <td>{{ a.id }}</td>
+            <td>{% if a.conversation %}{{ a.conversation }}{% else %}<em>Conversación eliminada</em>{% endif %}</td>
+            <td>{{ a.archived_at }}</td>
+            <td>{% if a.archived_by %}{{ a.archived_by.username }}{% else %}—{% endif %}</td>
+            <td><a href="{% url 'comunicacion:archived_detail' a.id %}" class="btn btn-sm btn-primary">Ver</a></td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No hay chats archivados disponibles.</p>
+{% endif %}
+
+{% endblock %}

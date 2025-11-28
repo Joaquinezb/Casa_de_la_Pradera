@@ -14,4 +14,7 @@ urlpatterns = [
     path('solicitudes/<int:solicitud_id>/actualizar/', views.actualizar_solicitud, name='actualizar_solicitud'),
     path('incidentes/', views.incidentes_list, name='incidentes_list'),
     path('incidentes/<int:incidente_id>/marcar_visto/', views.marcar_incidente_visto, name='marcar_incidente_visto'),
+    # Archivados
+    path('archivados/', views.archived_chats_list, name='archived_list'),
+    path('archivados/<int:archivo_id>/', views.archived_chat_detail, name='archived_detail'),
 ]

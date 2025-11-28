@@ -46,6 +46,12 @@ urlpatterns = [
     ),
 
     path(
+        'quitar_trabajador/',
+        views.quitar_trabajador,
+        name='quitar_trabajador'
+    ),
+
+    path(
         'cuadrilla/<int:cuadrilla_id>/disolver/',
         views.disolver_cuadrilla,
         name='disolver_cuadrilla'

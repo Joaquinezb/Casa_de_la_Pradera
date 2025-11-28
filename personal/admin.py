@@ -72,4 +72,14 @@ admin.site.register(Certificacion)
 admin.site.register(Experiencia)
 admin.site.register(Cuadrilla)
 admin.site.register(Rol)
-admin.site.register(Asignacion)
+@admin.register(Asignacion)
+class AsignacionAdmin(admin.ModelAdmin):
+    list_display = ('trabajador', 'cuadrilla', 'rol')
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # Evitar que líderes o jefes sean seleccionables como 'trabajador' en el admin
+        if db_field.name == 'trabajador':
+            from django.contrib.auth.models import User
+            # Usuarios cuyo perfil de Trabajador exista y cuyo tipo sea 'trabajador'
+            kwargs['queryset'] = User.objects.filter(trabajador_profile__tipo_trabajador='trabajador')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)

@@ -5,6 +5,15 @@
 
 <form method="post">
     {% csrf_token %}
+    {% if errors %}
+        <div class="alert alert-danger">
+            <ul>
+                {% for e in errors %}
+                    <li>{{ e }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
 
     <div class="mb-3">
         <label>Nombre de la cuadrilla:</label>
@@ -15,10 +24,19 @@
         <label>Líder (opcional):</label>
         <select name="lider" class="form-control">
             <option value="">-- Ninguno --</option>
-            {% for u in posibles_lideres %}
-                <option value="{{ u.id }}" {% if cuadrilla.lider and u.id == cuadrilla.lider.id %}selected{% endif %}>
-                    {{ u.first_name }} {{ u.last_name }}{% if not u.first_name and not u.last_name %} ({{ u.username }}){% endif %}
-                </option>
+            {% for item in posibles_lideres %}
+                {% with u=item.user %}
+                    {% if item.selectable %}
+                        <option value="{{ u.id }}" {% if cuadrilla.lider and u.id == cuadrilla.lider.id %}selected{% endif %}>
+                            {{ u.first_name }} {{ u.last_name }}{% if not u.first_name and not u.last_name %} ({{ u.username }}){% endif %}
+                        </option>
+                    {% else %}
+                        {# Mostrar ocupado y deshabilitado; si es el líder actual lo seguirá mostrando como seleccionable arriba #}
+                        <option value="{{ u.id }}" disabled>
+                            {{ u.first_name }} {{ u.last_name }}{% if not u.first_name and not u.last_name %} ({{ u.username }}){% endif %} (ocupado)
+                        </option>
+                    {% endif %}
+                {% endwith %}
             {% empty %}
                 <!-- No hay líderes configurados -->
             {% endfor %}
@@ -51,6 +69,7 @@
                 <th>Rol actual</th>
                 <th>Nuevo Rol</th>
                 <th>Ficha</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -145,6 +164,14 @@
                     {% endif %}
                 </td>
 
+                <td>
+                    {% if t.asignacion %}
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="quitarAsignacion({{ t.asignacion.id }})">Quitar</button>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
             </tr>
         {% endfor %}
         </tbody>
@@ -177,6 +204,52 @@
     else
         init();
 })();
+</script>
+
+<script>
+// Funciones para quitar asignación via fetch evitando formularios anidados
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function quitarAsignacion(asignacionId) {
+    if (!confirm('¿Seguro que quieres quitar este trabajador de la cuadrilla?')) return;
+
+    const url = "{% url 'personal:quitar_trabajador' %}";
+    const csrftoken = getCookie('csrftoken');
+
+    fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken,
+        },
+        body: new URLSearchParams({'asignacion_id': asignacionId})
+    }).then(resp => {
+        if (resp.ok) {
+            // refrescar la página para reflejar cambios
+            location.reload();
+        } else {
+            alert('No se pudo quitar al trabajador. Intenta nuevamente.');
+        }
+    }).catch(err => {
+        console.error(err);
+        alert('Error de red al intentar quitar al trabajador.');
+    });
+}
 </script>
 
 {% endblock %}

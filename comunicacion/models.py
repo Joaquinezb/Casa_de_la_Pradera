@@ -48,6 +48,8 @@ class Conversation(models.Model):
     # Usuarios que participan en la conversación
     participants = models.ManyToManyField(User, related_name='conversaciones')
     created_at = models.DateTimeField(auto_now_add=True)
+    # Indica si la conversación fue archivada (no se muestra en listas activas)
+    archived = models.BooleanField(default=False)
 
     class Meta:
         # Orden por más reciente primero para listar conversaciones activas
@@ -131,6 +133,58 @@ class Conversation(models.Model):
             return None
 
 
+def archive_conversation(conversation, archived_by=None, reason=''):
+    """Archivado centralizado de una conversación.
+
+    - Crea un registro `ChatArchivado` con un snapshot de los mensajes.
+    - Marca la conversación como `archived=True`.
+
+    `archived_by` es opcional y puede ser un `User` que inició el archivado.
+    """
+    import json
+    from django.utils import timezone
+
+    if not conversation:
+        return None
+
+    # Evitar volver a archivar
+    if getattr(conversation, 'archived', False):
+        return None
+
+    # Serializar mensajes mínimos
+    msgs = []
+    for m in conversation.mensajes.all().order_by('created_at'):
+        msgs.append({
+            'sender_id': m.sender.id if m.sender else None,
+            'sender_username': m.sender.username if m.sender else 'Sistema',
+            'content': m.content,
+            'message_type': m.message_type,
+            'created_at': m.created_at.isoformat(),
+        })
+    # Serializar participantes actuales para consultas y permisos futuros
+    participant_ids = []
+    try:
+        participant_ids = [u.id for u in conversation.participants.all() if u]
+    except Exception:
+        participant_ids = []
+
+    # Crear registro de archivado
+    archived = ChatArchivado.objects.create(
+        conversation=conversation,
+        archived_at=timezone.now(),
+        archived_by=archived_by,
+        reason=reason or '',
+        messages_snapshot=json.dumps(msgs, ensure_ascii=False),
+        participants_snapshot=json.dumps(participant_ids),
+    )
+
+    # Marcar conversación como archivada (pero conservar registro)
+    conversation.archived = True
+    conversation.save()
+
+    return archived
+
+
 class Message(models.Model):
     """Mensaje dentro de una `Conversation`.
 
@@ -167,6 +221,46 @@ class Message(models.Model):
         sender = self.sender.username if self.sender else 'Sistema'
         # Mostrar fragmento del contenido para facilitar debugging
         return f"{sender} @ {self.created_at}: {self.content[:40]}"
+
+
+class ChatArchivado(models.Model):
+    """Registro de conversaciones archivadas.
+
+    - `conversation`: FK al objeto original (nullable, se mantiene aunque la
+      conversación sea eliminada posteriormente).
+    - `archived_at`: timestamp del archivado.
+    - `archived_by`: usuario que solicitó el archivado (opcional).
+    - `reason`: texto corto describiendo motivo.
+    - `messages_snapshot`: JSON serializado con los mensajes en el momento del archivado.
+    """
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='archivos'
+    )
+    archived_at = models.DateTimeField()
+    archived_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='archivos_chat'
+    )
+    reason = models.CharField(max_length=200, blank=True, null=True)
+    # Guardamos el snapshot de mensajes como JSON en texto para compatibilidad sqlite
+    messages_snapshot = models.TextField()
+    # Snapshot de participantes como lista JSON de user IDs. Esto permite
+    # consultas rápidas sobre quiénes pueden acceder al archivo sin depender
+    # de la existencia de la Conversation original.
+    participants_snapshot = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-archived_at']
+
+    def __str__(self):
+        return f"ChatArchivado {self.id} - Conversacion {self.conversation_id} @ {self.archived_at}"
 
 
 class WorkerRequest(models.Model):
