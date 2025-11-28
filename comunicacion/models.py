@@ -116,7 +116,12 @@ class Conversation(models.Model):
         from personal.models import Asignacion
 
         miembros = Asignacion.objects.filter(cuadrilla=cuadrilla)
-        total = miembros.count()
+        # Lista de usuarios asignados
+        users = [a.trabajador for a in miembros if a.trabajador]
+        # Incluir al líder si no está en la lista
+        if cuadrilla.lider and cuadrilla.lider not in users:
+            users.append(cuadrilla.lider)
+        total = len(users)
 
         # Buscar conversación grupal existente para esta cuadrilla
         conv = cls.objects.filter(is_group=True, cuadrilla=cuadrilla).first()
@@ -129,8 +134,7 @@ class Conversation(models.Model):
                     cuadrilla=cuadrilla,
                     nombre=f"Cuadrilla {cuadrilla.nombre}"
                 )
-            # Añadir usuarios asignados (filtrando `None` por seguridad)
-            users = [a.trabajador for a in miembros if a.trabajador]
+            # Añadir usuarios asignados y líder
             conv.add_participants(users)
             return conv
         else:

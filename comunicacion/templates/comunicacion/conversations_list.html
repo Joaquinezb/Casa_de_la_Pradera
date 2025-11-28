@@ -72,6 +72,26 @@
 </div>
 {% endif %}
 
+{% if not is_jefe and mis_cuadrillas %}
+<hr class="section-divider">
+<div class="card">
+    <div class="card-title">Hablar con mi Líder</div>
+    <ul class="member-list">
+        {% for item in mis_cuadrillas %}
+            {% if item.cuadrilla.lider %}
+            <li class="member-item">
+                <strong>{{ item.cuadrilla.lider.get_full_name|default:item.cuadrilla.lider.username }}</strong>
+                <span style="color: var(--color-muted); margin-left: 8px;">Líder de {{ item.cuadrilla.nombre }}</span>
+                <a href="{% url 'comunicacion:crear_privada' item.cuadrilla.lider.pk %}" class="btn btn--ghost" style="padding: 4px 10px; font-size: 13px; margin-left: 12px;">Enviar mensaje</a>
+            </li>
+            {% endif %}
+        {% empty %}
+            <li class="member-item" style="color: var(--color-muted);">No se encontró líder de tus cuadrillas.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 {% if lideres_proyecto %}
 <hr class="section-divider">
 <div class="card">

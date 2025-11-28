@@ -93,12 +93,25 @@ def create_private_conversation(request, user_id):
     other = get_object_or_404(User, pk=user_id)
     from personal.models import Asignacion, Cuadrilla
 
+
     # Permitir mensajes privados si comparten cuadrilla
     cuadras_mias = Asignacion.objects.filter(trabajador=request.user).values_list('cuadrilla_id', flat=True)
     cuadras_otro = Asignacion.objects.filter(trabajador=other).values_list('cuadrilla_id', flat=True)
     comparte_cuadrilla = bool(set(cuadras_mias) & set(cuadras_otro))
 
     permitido = comparte_cuadrilla or request.user.is_staff or request.user.is_superuser
+
+    # Permitir si el usuario es líder de una cuadrilla y el otro es miembro de esa cuadrilla
+    cuadrillas_lideradas = Cuadrilla.objects.filter(lider=request.user)
+    es_miembro = Asignacion.objects.filter(trabajador=other, cuadrilla__in=cuadrillas_lideradas).exists()
+    if not permitido and cuadrillas_lideradas.exists() and es_miembro:
+        permitido = True
+
+    # Permitir si el otro es líder de una cuadrilla en la que el usuario es miembro
+    if not permitido:
+        lider_de_mi_cuadrilla = Cuadrilla.objects.filter(lider=other, asignaciones__trabajador=request.user).exists()
+        if lider_de_mi_cuadrilla:
+            permitido = True
 
     # Permitir si el usuario es Jefe de Proyecto y el otro es líder de una cuadrilla de sus proyectos
     if not permitido and es_jefe_proyecto(request.user):
