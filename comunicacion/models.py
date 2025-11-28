@@ -61,6 +61,13 @@ class Conversation(models.Model):
             return f"Grupo: {self.cuadrilla.nombre}"
         if self.nombre:
             return self.nombre
+        # Si no tiene nombre, construir a partir de participantes
+        try:
+            parts = [u.get_full_name() or u.username for u in self.participants.all()]
+            if parts:
+                return ', '.join(parts)
+        except Exception:
+            pass
         return f"Privada ({self.pk})"
 
     def add_participants(self, users):

@@ -63,7 +63,14 @@
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="comunicacionDropdown">
                         <li><a class="dropdown-item" href="{% url 'comunicacion:conversations_list' %}">Conversaciones</a></li>
-                        <li><a class="dropdown-item" href="{% url 'comunicacion:archived_list' %}">Archivadas</a></li>
+                        {% if archivos_archivados_count %}
+                        <li>
+                            <a class="dropdown-item d-flex justify-content-between align-items-center" href="{% url 'comunicacion:archived_list' %}">
+                                Archivadas
+                                <span class="badge bg-secondary ms-2">{{ archivos_archivados_count }}</span>
+                            </a>
+                        </li>
+                        {% endif %}
                     </ul>
                 </li>
 

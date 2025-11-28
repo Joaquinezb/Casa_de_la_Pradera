@@ -70,6 +70,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 'core.context_processors.notificaciones_no_leidas',
+                'core.context_processors.archivos_archivados_count',
             ],
         },
     },

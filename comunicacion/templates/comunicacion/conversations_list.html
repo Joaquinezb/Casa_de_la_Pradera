@@ -10,7 +10,16 @@
             {% if c.is_group and c.cuadrilla %}
                 Grupo: {{ c.cuadrilla.nombre }}
             {% else %}
-                {{ c.nombre|default:'Conversación privada' }}
+                {# Mostrar el nombre explícito si existe, sino construir a partir de participantes #}
+                {% if c.nombre %}
+                    {{ c.nombre }}
+                {% else %}
+                    {% for p in c.participants.all %}
+                        {{ p.get_full_name|default:p.username }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        Conversación privada
+                    {% endfor %}
+                {% endif %}
             {% endif %}
         </a>
     </li>

@@ -283,6 +283,37 @@ def archived_chats_list(request):
     # Combinar queryset y lista de objetos extra (convertir queryset a lista)
     archivos = list(qs) + extra
 
+    # Preparar `display_name` para cada archivo: si la conversación existe,
+    # usar su representación; si no, reconstruir a partir de
+    # `participants_snapshot` buscando los usuarios correspondientes.
+    import json
+    from django.contrib.auth.models import User
+
+    for a in archivos:
+        # Si hay conversación, la representación ya cubre nombres
+        if getattr(a, 'conversation', None):
+            try:
+                a.display_name = str(a.conversation)
+                continue
+            except Exception:
+                pass
+
+        # Conversación eliminada: intentar reconstruir desde participants_snapshot
+        a.display_name = None
+        try:
+            parts = json.loads(a.participants_snapshot or '[]')
+            if isinstance(parts, (list, tuple)) and parts:
+                users = User.objects.filter(id__in=parts)
+                names = [u.get_full_name() or u.username for u in users]
+                if names:
+                    a.display_name = ', '.join(names)
+        except Exception:
+            a.display_name = None
+
+        if not a.display_name:
+            # Fallback textual label
+            a.display_name = 'Conversación archivada'
+
     return render(request, 'comunicacion/archived_list.html', {'archivos': archivos})
 
 

@@ -18,7 +18,13 @@
     {% for a in archivos %}
         <tr>
             <td>{{ a.id }}</td>
-            <td>{% if a.conversation %}{{ a.conversation }}{% else %}<em>Conversación eliminada</em>{% endif %}</td>
+            <td>
+                {% if a.conversation %}
+                    {{ a.conversation }}
+                {% else %}
+                    {{ a.display_name|default:"Conversación eliminada" }}
+                {% endif %}
+            </td>
             <td>{{ a.archived_at }}</td>
             <td>{% if a.archived_by %}{{ a.archived_by.username }}{% else %}—{% endif %}</td>
             <td><a href="{% url 'comunicacion:archived_detail' a.id %}" class="btn btn-sm btn-primary">Ver</a></td>
