@@ -15,11 +15,9 @@ def conversations_list(request):
     """
     qs = Conversation.objects.filter(participants=request.user).select_related('cuadrilla')
 
-    # Obtener las cuadrillas donde el usuario es asignado o líder
     from personal.models import Asignacion, Cuadrilla
 
     cuad_ids = set(Asignacion.objects.filter(trabajador=request.user).values_list('cuadrilla_id', flat=True))
-    # Incluir las cuadrillas donde es líder
     lider_ids = set(Cuadrilla.objects.filter(lider=request.user).values_list('id', flat=True))
     cuad_ids |= lider_ids
 
@@ -27,7 +25,6 @@ def conversations_list(request):
     if cuad_ids:
         cuad_qs = Cuadrilla.objects.filter(id__in=cuad_ids)
         for c in cuad_qs:
-            # Obtener asignaciones para esta cuadrilla y construir lista de miembros con rol
             asigns = Asignacion.objects.filter(cuadrilla=c).select_related('trabajador', 'rol').exclude(trabajador=request.user)
             miembros = []
             for a in asigns:
@@ -37,9 +34,20 @@ def conversations_list(request):
                 })
             mis_cuadrillas.append({'cuadrilla': c, 'miembros': miembros})
 
+    # Si el usuario es Jefe de Proyecto, obtener líderes de cuadrillas de sus proyectos
+    is_jefe = request.user.groups.filter(name='JefeProyecto').exists()
+    lideres_proyecto = []
+    if is_jefe:
+        proyectos_cuadrillas = Cuadrilla.objects.filter(proyecto__jefe=request.user)
+        for c in proyectos_cuadrillas:
+            if c.lider and c.lider != request.user:
+                lideres_proyecto.append(c.lider)
+
     return render(request, 'comunicacion/conversations_list.html', {
         'conversations': qs,
         'mis_cuadrillas': mis_cuadrillas,
+        'lideres_proyecto': lideres_proyecto,
+        'is_jefe': is_jefe,
     })
 
 
@@ -78,21 +86,24 @@ def conversation_detail(request, conversation_id):
 @login_required
 def create_private_conversation(request, user_id):
     other = get_object_or_404(User, pk=user_id)
-    # Permitir mensajes privados solo entre miembros que comparten una cuadrilla
-    from personal.models import Asignacion
+    from personal.models import Asignacion, Cuadrilla
 
-    # Obtener cuadrillas del usuario actual y del otro
+    # Permitir mensajes privados si comparten cuadrilla
     cuadras_mias = Asignacion.objects.filter(trabajador=request.user).values_list('cuadrilla_id', flat=True)
     cuadras_otro = Asignacion.objects.filter(trabajador=other).values_list('cuadrilla_id', flat=True)
-
     comparte_cuadrilla = bool(set(cuadras_mias) & set(cuadras_otro))
 
-    # Permitir también si el usuario es staff/superuser (administrador)
-    if not comparte_cuadrilla and not (request.user.is_staff or request.user.is_superuser):
-        # No autorizado a iniciar conversación privada con ese usuario
+    permitido = comparte_cuadrilla or request.user.is_staff or request.user.is_superuser
+
+    # Permitir si el usuario es Jefe de Proyecto y el otro es líder de una cuadrilla de sus proyectos
+    if not permitido and request.user.groups.filter(name='JefeProyecto').exists():
+        cuadrillas_jefe = Cuadrilla.objects.filter(proyecto__jefe=request.user)
+        if cuadrillas_jefe.filter(lider=other).exists():
+            permitido = True
+
+    if not permitido:
         return redirect('comunicacion:conversations_list')
 
-    # Buscar conversación privada existente entre ambos (sin grupo)
     conv = Conversation.objects.filter(is_group=False, participants=request.user).filter(participants=other).distinct().first()
     if not conv:
         conv = Conversation.objects.create(is_group=False)

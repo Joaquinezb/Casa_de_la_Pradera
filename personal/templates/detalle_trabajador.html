@@ -11,7 +11,7 @@
 <p><strong>Email:</strong> {{ trabajador.email }}</p>
 <p><strong>Teléfono:</strong> {{ trabajador.telefono }}</p>
 <p><strong>Dirección:</strong> {{ trabajador.direccion|default:"—" }}</p>
-<p><strong>Especialidad:</strong> {{ perfil.especialidad|default:"—" }}</p>
+<p><strong>Especialidad:</strong> {{ trabajador.especialidad|default:"—" }}</p>
 <p><strong>Disponibilidad actual:</strong> {{ disponibilidad }}</p>
 
 <a href="{% url 'personal:editar_estado_trabajador' trabajador.id %}" class="btn btn-warning mt-2">

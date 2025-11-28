@@ -474,20 +474,39 @@ def detalle_cuadrilla(request, cuadrilla_id):
     asignaciones = Asignacion.objects.filter(cuadrilla=cuadrilla)
 
     users = [a.trabajador for a in asignaciones]
-
-    # Obtener los Trabajador correspondientes a los Users asignados
     trabajadores = Trabajador.objects.filter(user__in=users)
-
     perfiles = TrabajadorPerfil.objects.filter(user__in=users)
+    perfil_map = {p.user_id: p for p in perfiles}
+
+    # Construir lista enriquecida de trabajadores asignados
+    trabajadores_detalle = []
+    for asignacion in asignaciones:
+        user = asignacion.trabajador
+        trabajador = trabajadores.filter(user=user).first()
+        perfil = perfil_map.get(user.id)
+        # Disponibilidad: lógica unificada
+        if trabajador and getattr(trabajador, 'manual_override', False):
+            disponibilidad = trabajador.estado
+        elif perfil:
+            disponibilidad = perfil.estado_efectivo
+        else:
+            disponibilidad = '—'
+        # Especialidad: del modelo Trabajador
+        especialidad = trabajador.especialidad if trabajador and trabajador.especialidad else '—'
+        trabajadores_detalle.append({
+            'user': user,
+            'rol': asignacion.rol,
+            'disponibilidad': disponibilidad,
+            'especialidad': especialidad,
+            'asignacion': asignacion,
+        })
+
     competencias = CompetenciaTrabajador.objects.filter(trabajador__in=trabajadores)
     certificaciones = CertificacionTrabajador.objects.filter(trabajador__in=trabajadores)
     experiencias = ExperienciaTrabajador.objects.filter(trabajador__in=trabajadores)
 
-    perfil_map = {p.user_id: p for p in perfiles}
-
     comp_map = {}
     for c in competencias:
-        # clave por user.id para coincidir con la plantilla
         user_id = c.trabajador.user_id
         comp_map.setdefault(user_id, []).append(c)
 
@@ -501,8 +520,6 @@ def detalle_cuadrilla(request, cuadrilla_id):
         user_id = e.trabajador.user_id
         exp_map.setdefault(user_id, []).append(e)
 
-    # can_manage: Jefe puede gestionar cuadrillas que pertenezcan a sus proyectos
-    # (o cuadrillas sin proyecto). Líder puede gestionar su propia cuadrilla.
     can_manage = False
     if request.user.is_authenticated:
         if request.user.groups.filter(name='JefeProyecto').exists():
@@ -512,8 +529,7 @@ def detalle_cuadrilla(request, cuadrilla_id):
 
     return render(request, "detalle_cuadrilla.html", {
         "cuadrilla": cuadrilla,
-        "asignaciones": asignaciones,
-        "perfil_map": perfil_map,
+        "trabajadores_detalle": trabajadores_detalle,
         "comp_map": comp_map,
         "cert_map": cert_map,
         "exp_map": exp_map,
@@ -653,6 +669,7 @@ def quitar_trabajador(request):
     if not asign:
         return redirect('personal:detalle_cuadrilla', None)
 
+    cuadrilla = asign.cuadrilla
     # Permisos: permitir si
     # - JefeProyecto del proyecto de la cuadrilla, o
     # - LiderCuadrilla y lidera la cuadrilla
@@ -669,7 +686,6 @@ def quitar_trabajador(request):
         crear_notificacion(user, 'No tienes permiso para quitar a este trabajador.')
         return redirect('personal:detalle_cuadrilla', cuadrilla.id)
 
-    cuadrilla = asign.cuadrilla
     trabajador_user = asign.trabajador
 
     # Capturar datos antes de eliminar
@@ -679,13 +695,19 @@ def quitar_trabajador(request):
     # Eliminar la asignación
     asign.delete()
 
-    # Ajustar estado del Trabajador: si no tiene override manual, poner 'disponible'
+    # Ajustar estado del Trabajador: si tenía override manual y estado especial, devolver a automático y disponible
     try:
         trabajador_profile = getattr(trabajador_user, 'trabajador_profile', None)
-        if trabajador_profile and not getattr(trabajador_profile, 'manual_override', False):
-            # trabajador_profile here is actually Trabajador model on this project
-            trabajador_profile.estado = 'disponible'
-            trabajador_profile.save()
+        if trabajador_profile:
+            # Si está en modo manual y el estado es vacaciones/licencia/no_disponible, devolver a automático y disponible
+            if getattr(trabajador_profile, 'manual_override', False) and trabajador_profile.estado in ['vacaciones', 'licencia', 'no_disponible']:
+                trabajador_profile.manual_override = False
+                trabajador_profile.estado = 'disponible'
+                trabajador_profile.save()
+            # Si no tiene override manual, poner disponible
+            elif not getattr(trabajador_profile, 'manual_override', False):
+                trabajador_profile.estado = 'disponible'
+                trabajador_profile.save()
     except Exception:
         # Silenciar errores no críticos de actualización de estado
         pass

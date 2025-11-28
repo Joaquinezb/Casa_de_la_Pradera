@@ -28,6 +28,7 @@
     {% endfor %}
 </ul>
 
+{% if not is_jefe %}
 <hr>
 <h3>Mi(s) Cuadrilla(s)</h3>
 {% if mis_cuadrillas %}
@@ -50,7 +51,22 @@
 {% else %}
     <p>No perteneces a ninguna cuadrilla todavía.</p>
 {% endif %}
+{% endif %}
 
+{% if lideres_proyecto %}
+<hr>
+<h3>Líderes de cuadrillas de tus proyectos</h3>
+<ul>
+    {% for lider in lideres_proyecto %}
+    <li>
+        <strong>{{ lider.get_full_name|default:lider.username }}</strong>
+        - <a href="{% url 'comunicacion:crear_privada' lider.pk %}">Enviar privado</a>
+    </li>
+    {% empty %}
+    <li>No hay líderes asignados a tus proyectos.</li>
+    {% endfor %}
+</ul>
+{% endif %}
 
 <hr>
 
