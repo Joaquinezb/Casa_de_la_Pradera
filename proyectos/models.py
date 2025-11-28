@@ -25,6 +25,9 @@ class Proyecto(models.Model):
     fecha_inicio = models.DateField()
     fecha_termino = models.DateField(null=True, blank=True)
     jefe = models.ForeignKey(User, on_delete=models.CASCADE, related_name='proyectos')
+    # Usuario que creó el proyecto (puede ser igual a `jefe`), y timestamp
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='proyectos_creados')
+    created_at = models.DateTimeField(auto_now_add=True)
     activo = models.BooleanField(default=True)
 
     def __str__(self):

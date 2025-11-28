@@ -165,8 +165,10 @@
                 </td>
 
                 <td>
-                    {% if t.asignacion %}
+                    {% if t.asignacion and t.can_remove %}
                         <button type="button" class="btn btn-sm btn-outline-danger" onclick="quitarAsignacion({{ t.asignacion.id }})">Quitar</button>
+                    {% elif t.asignacion %}
+                        <em>No autorizado</em>
                     {% else %}
                         —
                     {% endif %}

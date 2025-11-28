@@ -2,6 +2,13 @@
 {% block content %}
 <h2>Editar proyecto: {{ proyecto.nombre }}</h2>
 
+<p><strong>Jefe:</strong> {{ proyecto.jefe.get_full_name|default:proyecto.jefe.username }}</p>
+{% if proyecto.created_by %}
+    <p><strong>Creado por:</strong> {{ proyecto.created_by.get_full_name|default:proyecto.created_by.username }} — <small>{{ proyecto.created_at }}</small></p>
+{% else %}
+    <p class="small">Creado: {{ proyecto.created_at }}</p>
+{% endif %}
+
 <form method="post">
     {% csrf_token %}
     <p><strong>Fecha inicio:</strong> {{ proyecto.fecha_inicio }}</p>

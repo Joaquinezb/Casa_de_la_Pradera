@@ -4,60 +4,165 @@
 
 <a href="{% url 'proyectos:nuevo' %}" class="btn btn-primary">+ Nuevo Proyecto</a>
 
+{% if is_jefe_view %}
+<div class="alert alert-info mt-3">
+    <strong>Vista Jefe:</strong> Todos los proyectos (lectura completa). Puedes crear proyectos ilimitados; editar solo tus propios proyectos.
+</div>
+
+<!-- Filtros para Jefe -->
+<div class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input id="filtro-buscar" class="form-control" placeholder="Buscar por proyecto o jefe...">
+    </div>
+    <div class="col-md-3">
+        <select id="filtro-estado" class="form-select">
+            <option value="todos">Mostrar: Todos</option>
+            <option value="activos">Activos</option>
+            <option value="finalizados">Finalizados</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select id="filtro-lider" class="form-select">
+            <option value="">Filtrar por jefe (opcional)</option>
+            <option value="mios">-- Míos --</option>
+            {% for jefe in jefes_list %}
+                <option value="{{ jefe.id }}">{{ jefe.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+{% endif %}
+
 {% if data %}
 {% for item in data %}
-<div class="card mt-4">
-    <div class="card-body">
+    <div class="card mt-4">
+    <div class="card-body proyecto-card" data-nombre="{{ item.proyecto.nombre|lower }}" data-jefe="{{ item.proyecto.jefe.get_full_name|default:item.proyecto.jefe.username|lower }}" data-activo="true"
+        {% if item.proyecto.jefe %}data-jefe-id="{{ item.proyecto.jefe.id }}"{% else %}data-jefe-id=""{% endif %}>
         <h4>
             {{ item.proyecto.nombre }}
+            {% if item.can_edit_project %}
             <a href="{% url 'proyectos:editar' item.proyecto.id %}" class="btn btn-sm btn-outline-secondary ms-2" title="Editar proyecto" style="padding:0.15rem 0.4rem; font-size:0.9rem; vertical-align:middle;">
                 &#9998;
             </a>
+            {% endif %}
         </h4>
-        <p><strong>Inicio:</strong> {{ item.proyecto.fecha_inicio }} |
-           <strong>Término:</strong> {{ item.proyecto.fecha_termino|default:"—" }}</p>
+          <p><strong>Inicio:</strong> {{ item.proyecto.fecha_inicio }} |
+              <strong>Término:</strong> {{ item.proyecto.fecha_termino|default:"—" }}</p>
+          <p><strong>Jefe:</strong> {{ item.proyecto.jefe.get_full_name|default:item.proyecto.jefe.username }}{% if item.proyecto.created_by and item.proyecto.created_by.id != item.proyecto.jefe.id %} — <small>Creado por: {{ item.proyecto.created_by.get_full_name|default:item.proyecto.created_by.username }}</small>{% endif %}</p>
+          <p class="small">Creado: {{ item.proyecto.created_at }}</p>
         <p><strong>Descripción:</strong> {{ item.proyecto.descripcion|default:"Sin descripción" }}</p>
 
         <h5 class="mt-3">Cuadrillas asignadas</h5>
         {% if item.cuadrillas %}
             <ul>
-                {% for c in item.cuadrillas %}
+                {% for citem in item.cuadrillas %}
+                    {% with c=citem.cuadrilla %}
                     <li>
                         <strong>{{ c.nombre }}</strong>
                         — Líder: {{ c.lider.username|default:"(Sin líder)" }}
-                        — ({{ c.trabajadores.count }} trabajadores)
+                        — ({{ c.asignaciones.count }} trabajadores)
 
                         <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-outline-primary ms-2">
                             Ver cuadrilla
                         </a>
-                        <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-outline-secondary ms-2">
-                            Editar cuadrilla
-                        </a>
+                        {% if citem.can_edit %}
+                            <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-outline-secondary ms-2">Editar cuadrilla</a>
+                        {% endif %}
                     </li>
+                    {% endwith %}
                 {% endfor %}
             </ul>
         {% else %}
             <p>No hay cuadrillas asignadas.</p>
         {% endif %}
-        <a href="{% url 'proyectos:asignar_cuadrillas' item.proyecto.id %}" 
-           class="btn btn-sm btn-outline-primary mt-2">
-            Asignar / Editar Cuadrillas
-        </a>
+
+        {% if item.can_assign %}
+        <a href="{% url 'proyectos:asignar_cuadrillas' item.proyecto.id %}" class="btn btn-sm btn-outline-primary mt-2">Asignar / Editar Cuadrillas</a>
+        {% endif %}
 
         {% if item.proyecto.activo %}
-            <!-- Ir a la página de confirmación (GET) antes de finalizar -->
-            <a href="{% url 'proyectos:finalizar' item.proyecto.id %}" class="btn btn-sm btn-danger mt-2 ms-2">Finalizar proyecto</a>
+            {# Proyecto activo: solo mostrar botón si el usuario puede finalizarlo #}
+            {% if item.can_finalize %}
+                <a href="{% url 'proyectos:finalizar' item.proyecto.id %}" class="btn btn-sm btn-danger mt-2 ms-2">Finalizar proyecto</a>
+            {% endif %}
         {% else %}
+            {# Proyecto ya finalizado: mostrar badge #}
             <span class="badge bg-secondary ms-2">Finalizado</span>
         {% endif %}
 
-        <a href="{% url 'personal:crear_cuadrilla' %}" class="btn btn-outline-primary">
-    + Crear Cuadrilla
-</a>
+        {% if item.can_create_cuadrilla %}
+            <a href="{% url 'personal:crear_cuadrilla' %}" class="btn btn-outline-primary">+ Crear Cuadrilla</a>
+        {% endif %}
 
     </div>
 </div>
 {% endfor %}
+{% if is_jefe_view %}
+<script>
+(function(){
+    function normalize(s){ return (s||'').toString().toLowerCase(); }
+
+    function filtrar(){
+        var elBuscar = document.getElementById('filtro-buscar');
+        var elEstado = document.getElementById('filtro-estado');
+        var elLider = document.getElementById('filtro-lider');
+
+        const q = normalize(elBuscar && elBuscar.value);
+        const estado = (elEstado && elEstado.value) || 'todos';
+        const jefeVal = (elLider && elLider.value) || '';
+        const jefeLower = normalize((elLider && elLider.selectedOptions && elLider.selectedOptions[0] && elLider.selectedOptions[0].text) || '');
+        const currentUserId = String("{{ current_user_id }}");
+
+        // Filtrar proyectos activos
+        document.querySelectorAll('.proyecto-card').forEach(function(card){
+            const nombre = normalize(card.dataset.nombre);
+            const jname = normalize(card.dataset.jefe);
+            const jId = String(card.dataset.jefeId || '');
+            let show = true;
+            if(q && !(nombre.includes(q) || jname.includes(q))) show = false;
+
+            if(jefeVal){
+                if(jefeVal === 'mios'){
+                    if(jId !== currentUserId) show = false;
+                } else {
+                    if(jId !== jefeVal) show = false;
+                }
+            }
+
+            if(estado === 'finalizados') show = false;
+            card.parentElement.style.display = show ? '' : 'none';
+        });
+
+        // Filtrar proyectos finalizados
+        document.querySelectorAll('.finalizado-item').forEach(function(el){
+            const nombre = normalize(el.dataset.nombre);
+            const jname = normalize(el.dataset.jefe);
+            const jId = String(el.dataset.jefeId || '');
+            let show = true;
+            if(q && !(nombre.includes(q) || jname.includes(q))) show = false;
+
+            if(jefeVal){
+                if(jefeVal === 'mios'){
+                    if(jId !== currentUserId) show = false;
+                } else {
+                    if(jId !== jefeVal) show = false;
+                }
+            }
+
+            if(estado === 'activos') show = false;
+            el.style.display = show ? '' : 'none';
+        });
+    }
+
+    var elBuscar = document.getElementById('filtro-buscar');
+    var elEstado = document.getElementById('filtro-estado');
+    var elLider = document.getElementById('filtro-lider');
+    if(elBuscar) elBuscar.addEventListener('input', filtrar);
+    if(elEstado) elEstado.addEventListener('change', filtrar);
+    if(elLider) elLider.addEventListener('change', filtrar);
+})();
+</script>
+{% endif %}
 {% else %}
 <p class="mt-3">No tienes proyectos registrados aún.</p>
 {% endif %}
@@ -67,18 +172,28 @@
         <div class="card-body">
             <h5>Cuadrillas sin proyecto</h5>
             <ul>
-            {% for c in cuadrillas_sin_proyecto %}
+            {% for entry in cuadrillas_sin_proyecto %}
+                {% with c=entry.cuadrilla %}
                 <li class="mb-3">
                     <strong>{{ c.nombre }}</strong>
                     — Líder: {{ c.lider.username|default:"(Sin líder)" }}
                     — ({{ c.asignaciones.count }} trabajadores)
                     <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-outline-primary ms-2">Ver</a>
-                    <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-outline-secondary ms-2">Editar</a>
-                    <form method="post" action="{% url 'personal:disolver_cuadrilla' c.id %}" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-danger ms-2" onclick="return confirm('¿Deseas disolver la cuadrilla \"{{ c.nombre }}\"? Esta acción eliminará la cuadrilla y sus asignaciones.')">Disolver</button>
-                    </form>
+                    {% if entry.can_edit %}
+                        <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-outline-secondary ms-2">Editar</a>
+                    {% else %}
+                        <button class="btn btn-sm btn-outline-secondary ms-2" disabled title="No autorizado">Editar</button>
+                    {% endif %}
+                    {% if entry.can_disolver %}
+                        <form method="post" action="{% url 'personal:disolver_cuadrilla' c.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger ms-2" onclick="return confirm('¿Deseas disolver la cuadrilla &quot;{{ c.nombre }}&quot;? Esta acción eliminará la cuadrilla y sus asignaciones.')">Disolver</button>
+                        </form>
+                    {% else %}
+                        <button class="btn btn-sm btn-danger ms-2" disabled title="No autorizado">Disolver</button>
+                    {% endif %}
                 </li>
+                {% endwith %}
             {% endfor %}
             </ul>
         </div>
@@ -91,12 +206,13 @@
         <div class="card-body">
             <h4>Proyectos finalizados</h4>
             {% for item in finalizados %}
-                <div class="mb-3">
-                    <strong>{{ item.proyecto.nombre }}</strong>
-                    – ({{ item.proyecto.fecha_inicio }} - {{ item.proyecto.fecha_termino|default:'—' }})
-                    <span class="badge bg-secondary ms-2">Finalizado</span>
-                    <p class="small">{{ item.proyecto.descripcion|default:'Sin descripción' }}</p>
-                </div>
+                <div class="mb-3 finalizado-item" data-nombre="{{ item.proyecto.nombre|lower }}" data-jefe="{{ item.proyecto.jefe.get_full_name|default:item.proyecto.jefe.username|lower }}"
+                    {% if item.proyecto.jefe %}data-jefe-id="{{ item.proyecto.jefe.id }}"{% else %}data-jefe-id=""{% endif %}>
+                            <strong>{{ item.proyecto.nombre }}</strong>
+                            – ({{ item.proyecto.fecha_inicio }} - {{ item.proyecto.fecha_termino|default:'—' }})
+                            <span class="badge bg-secondary ms-2">Finalizado</span>
+                            <p class="small">{{ item.proyecto.descripcion|default:'Sin descripción' }}</p>
+                        </div>
             {% endfor %}
         </div>
     </div>

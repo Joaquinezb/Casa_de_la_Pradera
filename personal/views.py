@@ -200,10 +200,26 @@ def crear_cuadrilla(request):
 # 2. EDITAR CUADRILLA (CORREGIDO)
 # =====================================================
 @login_required
-@user_passes_test(es_jefe)
 def editar_cuadrilla(request, cuadrilla_id):
 
     cuadrilla = get_object_or_404(Cuadrilla, id=cuadrilla_id)
+
+    # Permisos:
+    # - JefeProyecto: puede editar solo cuadrillas que pertenezcan a sus proyectos
+    #   o cuadrillas sin proyecto.
+    # - LiderCuadrilla: solo puede editar su propia cuadrilla.
+    user = request.user
+    if user.groups.filter(name='JefeProyecto').exists():
+        if cuadrilla.proyecto and cuadrilla.proyecto.jefe_id != user.id:
+            crear_notificacion(user, 'No tienes permiso para editar esta cuadrilla.')
+            return redirect('proyectos:panel')
+    elif user.groups.filter(name='LiderCuadrilla').exists():
+        if cuadrilla.lider_id != user.id:
+            crear_notificacion(user, 'Solo puedes editar tu propia cuadrilla.')
+            return redirect('proyectos:panel')
+    else:
+        # Otros roles no pueden editar
+        return redirect('proyectos:panel')
 
     # Mostrar solo trabajadores de tipo 'trabajador' (excluir líderes y jefes)
     trabajadores = Trabajador.objects.filter(activo=True, tipo_trabajador='trabajador').select_related("user")
@@ -223,8 +239,13 @@ def editar_cuadrilla(request, cuadrilla_id):
             'ocupado': ocupado and not (cuadrilla.lider and u.id == cuadrilla.lider.id),
             'selectable': selectable,
         })
-    # Mostrar solo proyectos activos al editar una cuadrilla
-    proyectos = Proyecto.objects.filter(jefe=request.user, activo=True)
+    # Mostrar proyectos permitidos en el selector:
+    # - Para Jefe: proyectos activos donde es jefe
+    # - Para Líder: solo el proyecto actual de la cuadrilla (no permitir cambiar a otro proyecto)
+    if user.groups.filter(name='JefeProyecto').exists():
+        proyectos = Proyecto.objects.filter(jefe=request.user, activo=True)
+    else:
+        proyectos = Proyecto.objects.filter(id=cuadrilla.proyecto.id) if cuadrilla.proyecto else Proyecto.objects.none()
 
     asignaciones_actuales = {
         str(a.trabajador.id): a for a in Asignacion.objects.filter(cuadrilla=cuadrilla)
@@ -247,6 +268,13 @@ def editar_cuadrilla(request, cuadrilla_id):
         certs = CertificacionTrabajador.objects.filter(trabajador=t)
         t.certificacion_lista = [c.nombre for c in certs]
         t.tiene_certificaciones = certs.exists()
+        # Permiso local para mostrar botón 'Quitar' en la plantilla de edición:
+        if user.groups.filter(name='JefeProyecto').exists():
+            t.can_remove = (not cuadrilla.proyecto) or (cuadrilla.proyecto and cuadrilla.proyecto.jefe_id == user.id)
+        elif user.groups.filter(name='LiderCuadrilla').exists():
+            t.can_remove = cuadrilla.lider_id == user.id
+        else:
+            t.can_remove = False
 
     if request.method == "POST":
 
@@ -410,6 +438,7 @@ def editar_cuadrilla(request, cuadrilla_id):
         "roles": roles,
         "proyectos": proyectos,
         "posibles_lideres": posibles_lideres,
+        "can_manage": True,
     })
 
 
@@ -418,6 +447,30 @@ def editar_cuadrilla(request, cuadrilla_id):
 # =====================================================
 def detalle_cuadrilla(request, cuadrilla_id):
     cuadrilla = get_object_or_404(Cuadrilla, id=cuadrilla_id)
+
+    # Control de acceso según rol:
+    # - JefeProyecto: puede ver todas las cuadrillas
+    # - LiderCuadrilla: puede ver si lidera alguna cuadrilla en el mismo proyecto (ver todas las cuadrillas del proyecto)
+    # - Trabajador: solo puede ver si está asignado a esta cuadrilla
+    user = request.user
+    if user.is_authenticated:
+        if user.groups.filter(name='JefeProyecto').exists():
+            allowed = True
+        elif user.groups.filter(name='LiderCuadrilla').exists():
+            # permitir si el líder lidera alguna cuadrilla del mismo proyecto
+            if cuadrilla.proyecto and Cuadrilla.objects.filter(proyecto=cuadrilla.proyecto, lider=user).exists():
+                allowed = True
+            else:
+                allowed = False
+        else:
+            # trabajador u otros: permitir solo si está asignado a esta cuadrilla
+            from .models import Asignacion as AsigModel
+            allowed = AsigModel.objects.filter(trabajador=user, cuadrilla=cuadrilla).exists()
+    else:
+        allowed = False
+
+    if not allowed:
+        return redirect('proyectos:panel')
     asignaciones = Asignacion.objects.filter(cuadrilla=cuadrilla)
 
     users = [a.trabajador for a in asignaciones]
@@ -448,6 +501,15 @@ def detalle_cuadrilla(request, cuadrilla_id):
         user_id = e.trabajador.user_id
         exp_map.setdefault(user_id, []).append(e)
 
+    # can_manage: Jefe puede gestionar cuadrillas que pertenezcan a sus proyectos
+    # (o cuadrillas sin proyecto). Líder puede gestionar su propia cuadrilla.
+    can_manage = False
+    if request.user.is_authenticated:
+        if request.user.groups.filter(name='JefeProyecto').exists():
+            can_manage = (not cuadrilla.proyecto) or (cuadrilla.proyecto and cuadrilla.proyecto.jefe_id == request.user.id)
+        elif request.user.groups.filter(name='LiderCuadrilla').exists() and cuadrilla.lider_id == request.user.id:
+            can_manage = True
+
     return render(request, "detalle_cuadrilla.html", {
         "cuadrilla": cuadrilla,
         "asignaciones": asignaciones,
@@ -455,14 +517,13 @@ def detalle_cuadrilla(request, cuadrilla_id):
         "comp_map": comp_map,
         "cert_map": cert_map,
         "exp_map": exp_map,
-        "can_manage": request.user.is_authenticated and request.user.groups.filter(name='JefeProyecto').exists(),
+        "can_manage": can_manage,
         "cuadrillas": Cuadrilla.objects.all(),
     })
 
 
 
 @login_required
-@user_passes_test(es_jefe)
 def mover_trabajador(request):
     """
     Mueve un trabajador (a través de su Asignacion) de una cuadrilla a otra.
@@ -480,6 +541,23 @@ def mover_trabajador(request):
 
     if not asign or not nueva:
         return redirect('personal:detalle_cuadrilla', asign.cuadrilla.id if asign else None)
+
+    # Permisos: permitir acción si
+    # - Usuario es JefeProyecto del proyecto origen o destino, o
+    # - Usuario es LiderCuadrilla y lidera la cuadrilla origen (gestiona su propio personal)
+    user = request.user
+    permitido = False
+    if user.groups.filter(name='JefeProyecto').exists():
+        # permitir si alguna de las cuadrillas pertenece a un proyecto cuyo jefe es el usuario
+        if (antigua.proyecto and antigua.proyecto.jefe_id == user.id) or (nueva.proyecto and nueva.proyecto.jefe_id == user.id):
+            permitido = True
+    elif user.groups.filter(name='LiderCuadrilla').exists():
+        if antigua.lider_id == user.id:
+            permitido = True
+
+    if not permitido:
+        crear_notificacion(user, 'No tienes permiso para mover este trabajador entre cuadrillas.')
+        return redirect('personal:detalle_cuadrilla', antigua.id)
 
     antigua = asign.cuadrilla
     trabajador_user = asign.trabajador
@@ -501,7 +579,6 @@ def mover_trabajador(request):
 
 
 @login_required
-@user_passes_test(es_jefe)
 def disolver_cuadrilla(request, cuadrilla_id):
     """Eliminar una cuadrilla que no esté asociada a un proyecto.
 
@@ -512,6 +589,20 @@ def disolver_cuadrilla(request, cuadrilla_id):
     # Solo permitir disolver si no está asociada a un proyecto
     if cuad.proyecto is not None:
         crear_notificacion(request.user, f"No se puede disolver la cuadrilla '{cuad.nombre}' porque está asociada a un proyecto.")
+        return redirect('personal:detalle_cuadrilla', cuad.id)
+
+    # Permisos: permitir disolver si es líder de la cuadrilla o (si la cuadrilla está asignada
+    # a un proyecto) si el usuario es el jefe de ese proyecto. Si la cuadrilla no tiene proyecto,
+    # solo el líder puede disolverla.
+    user = request.user
+    if cuad.proyecto:
+        permitido = (user.groups.filter(name='LiderCuadrilla').exists() and cuad.lider_id == user.id) or \
+                    (user.groups.filter(name='JefeProyecto').exists() and cuad.proyecto.jefe_id == user.id)
+    else:
+        permitido = (user.groups.filter(name='LiderCuadrilla').exists() and cuad.lider_id == user.id)
+
+    if not permitido:
+        crear_notificacion(user, 'No tienes permiso para disolver esta cuadrilla.')
         return redirect('personal:detalle_cuadrilla', cuad.id)
 
     # Capturar información antes de eliminar
@@ -543,7 +634,6 @@ def disolver_cuadrilla(request, cuadrilla_id):
 
 
 @login_required
-@user_passes_test(es_jefe)
 def quitar_trabajador(request):
     """
     Quitar un trabajador de su cuadrilla actual.
@@ -562,6 +652,22 @@ def quitar_trabajador(request):
     asign = Asignacion.objects.filter(id=asignacion_id).first()
     if not asign:
         return redirect('personal:detalle_cuadrilla', None)
+
+    # Permisos: permitir si
+    # - JefeProyecto del proyecto de la cuadrilla, o
+    # - LiderCuadrilla y lidera la cuadrilla
+    user = request.user
+    permitido = False
+    if user.groups.filter(name='JefeProyecto').exists():
+        # permitir si el jefe es responsable del proyecto asociado a la cuadrilla (o si la cuadrilla no tiene proyecto)
+        if not cuadrilla.proyecto or (cuadrilla.proyecto and cuadrilla.proyecto.jefe_id == user.id):
+            permitido = True
+    elif user.groups.filter(name='LiderCuadrilla').exists():
+        permitido = cuadrilla.lider_id == user.id
+
+    if not permitido:
+        crear_notificacion(user, 'No tienes permiso para quitar a este trabajador.')
+        return redirect('personal:detalle_cuadrilla', cuadrilla.id)
 
     cuadrilla = asign.cuadrilla
     trabajador_user = asign.trabajador

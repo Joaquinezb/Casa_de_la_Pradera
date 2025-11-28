@@ -10,11 +10,6 @@ from django.contrib import messages
 def es_jefe(user):
     return user.groups.filter(name='JefeProyecto').exists()
 
-@login_required
-@user_passes_test(es_jefe)
-def panel_proyectos(request):
-    proyectos = Proyecto.objects.filter(jefe=request.user)
-    return render(request, 'panel.html', {'proyectos': proyectos})
 
 @login_required
 @user_passes_test(es_jefe)
@@ -24,6 +19,7 @@ def crear_proyecto(request):
         if form.is_valid():
             proyecto = form.save(commit=False)
             proyecto.jefe = request.user  # asigna automáticamente el jefe
+            proyecto.created_by = request.user
             proyecto.save()
             return redirect('proyectos:panel')
     else:
@@ -61,30 +57,105 @@ def editar_proyecto(request, proyecto_id):
 
 
 @login_required
-@user_passes_test(es_jefe)
 def panel_proyectos(request):
-    # Separar proyectos activos y finalizados
-    proyectos_activos = Proyecto.objects.filter(jefe=request.user, activo=True).prefetch_related('cuadrillas')
-    proyectos_finalizados = Proyecto.objects.filter(jefe=request.user, activo=False).prefetch_related('cuadrillas')
+    """Panel de proyectos con visibilidad según rol:
 
-    data = []
-    for p in proyectos_activos:
-        cuadrillas = Cuadrilla.objects.filter(proyecto=p)
-        data.append({'proyecto': p, 'cuadrillas': cuadrillas})
+    - JefeProyecto: ve todos sus proyectos (activos y finalizados), puede crear/editar/asignar.
+    - LiderCuadrilla: ve proyectos donde lidera al menos una cuadrilla; puede ver todas las cuadrillas del proyecto (solo lectura).
+    - Trabajador: ve solo el proyecto asociado a su cuadrilla actual (info básica).
+    """
+    user = request.user
 
-    finalizados = []
-    for p in proyectos_finalizados:
-        cuadrillas = Cuadrilla.objects.filter(proyecto=p)
-        finalizados.append({'proyecto': p, 'cuadrillas': cuadrillas})
+    # JefeProyecto: ver todos los proyectos y sus cuadrillas (lectura completa).
+    # Las acciones de edición/creación siguen restringidas por otras vistas.
+    if user.groups.filter(name='JefeProyecto').exists():
+        proyectos_activos = Proyecto.objects.filter(activo=True).prefetch_related('cuadrillas')
+        proyectos_finalizados = Proyecto.objects.filter(activo=False).prefetch_related('cuadrillas')
 
-    # Mostrar también cuadrillas que no están asignadas a ningún proyecto
-    cuadrillas_sin_proyecto = Cuadrilla.objects.filter(proyecto__isnull=True)
+        data = []
+        for p in proyectos_activos:
+            cuadrillas = Cuadrilla.objects.filter(proyecto=p)
+            # Construir lista de cuadrillas con permisos por item
+            cuad_list = []
+            for c in cuadrillas:
+                cuad_list.append({
+                    'cuadrilla': c,
+                    'can_edit': (p.jefe_id == user.id) or (c.lider_id == user.id),
+                })
 
-    return render(request, 'panel.html', {
-        'data': data,
-        'finalizados': finalizados,
-        'cuadrillas_sin_proyecto': cuadrillas_sin_proyecto
-    })
+            data.append({
+                'proyecto': p,
+                'cuadrillas': cuad_list,
+                'can_edit_project': (p.jefe_id == user.id),
+                'can_assign': (p.jefe_id == user.id),
+                'can_finalize': (p.jefe_id == user.id),
+                'can_create_cuadrilla': (p.jefe_id == user.id),
+            })
+
+        finalizados = []
+        for p in proyectos_finalizados:
+            cuadrillas = Cuadrilla.objects.filter(proyecto=p)
+            cuad_list = []
+            for c in cuadrillas:
+                cuad_list.append({
+                    'cuadrilla': c,
+                    'can_edit': (p.jefe_id == user.id) or (c.lider_id == user.id),
+                })
+            finalizados.append({'proyecto': p, 'cuadrillas': cuad_list, 'can_edit_project': (p.jefe_id == user.id)})
+
+        # Mostrar todas las cuadrillas sin proyecto
+        cuadrillas_sin_proyecto = []
+        for c in Cuadrilla.objects.filter(proyecto__isnull=True):
+            cuadrillas_sin_proyecto.append({
+                'cuadrilla': c,
+                'can_edit': (c.lider_id == user.id),
+                'can_disolver': (c.lider_id == user.id),
+            })
+
+        # Construir lista deduplicada de jefes para el selector
+        jefes_map = {}
+        for item in data:
+            j = item['proyecto'].jefe
+            if j:
+                jefes_map[j.id] = j.get_full_name() or j.username
+        for item in finalizados:
+            j = item['proyecto'].jefe
+            if j:
+                jefes_map[j.id] = j.get_full_name() or j.username
+
+        jefes_list = [{'id': k, 'nombre': v} for k, v in jefes_map.items()]
+
+        return render(request, 'panel.html', {
+            'data': data,
+            'finalizados': finalizados,
+            'cuadrillas_sin_proyecto': cuadrillas_sin_proyecto,
+            'is_jefe_view': True,
+            'jefes_list': jefes_list,
+            'current_user_id': user.id,
+        })
+        
+
+    # LiderCuadrilla: ver proyectos donde tiene cuadrillas asignadas
+    if user.groups.filter(name='LiderCuadrilla').exists():
+        proyectos = Proyecto.objects.filter(cuadrillas__lider=user).distinct()
+        data = []
+        for p in proyectos:
+            # Mostrar todas las cuadrillas del proyecto en modo lectura
+            cuadrillas = Cuadrilla.objects.filter(proyecto=p)
+            data.append({'proyecto': p, 'cuadrillas': cuadrillas})
+        return render(request, 'panel.html', {'data': data, 'readonly': True})
+
+    # Trabajador: mostrar solo el proyecto de su cuadrilla actual (si tiene)
+    from personal.models import Asignacion
+    asign = Asignacion.objects.filter(trabajador=user).select_related('cuadrilla__proyecto').first()
+    if asign and asign.cuadrilla and asign.cuadrilla.proyecto:
+        p = asign.cuadrilla.proyecto
+        # Enviar data simplificada para la plantilla
+        data = [{'proyecto': p, 'cuadrillas': [asign.cuadrilla]}]
+        return render(request, 'panel.html', {'data': data, 'basic': True})
+
+    # Por defecto mostrar mensaje vacío
+    return render(request, 'panel.html', {'data': []})
 
 @login_required
 @user_passes_test(es_jefe)
