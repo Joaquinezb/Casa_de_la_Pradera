@@ -6,6 +6,7 @@ from .models import ChatArchivado
 from .forms import MessageForm, WorkerRequestForm, IncidentForm
 from django.db.models import Q
 from personal.models import Asignacion, Cuadrilla
+from personal.utils import es_jefe_proyecto, es_lider_cuadrilla
 
 
 @login_required
@@ -35,7 +36,7 @@ def conversations_list(request):
             mis_cuadrillas.append({'cuadrilla': c, 'miembros': miembros})
 
     # Si el usuario es Jefe de Proyecto, obtener líderes de cuadrillas de sus proyectos
-    is_jefe = request.user.groups.filter(name='JefeProyecto').exists()
+    is_jefe = es_jefe_proyecto(request.user)
     lideres_proyecto = []
     if is_jefe:
         proyectos_cuadrillas = Cuadrilla.objects.filter(proyecto__jefe=request.user)
@@ -96,7 +97,7 @@ def create_private_conversation(request, user_id):
     permitido = comparte_cuadrilla or request.user.is_staff or request.user.is_superuser
 
     # Permitir si el usuario es Jefe de Proyecto y el otro es líder de una cuadrilla de sus proyectos
-    if not permitido and request.user.groups.filter(name='JefeProyecto').exists():
+    if not permitido and es_jefe_proyecto(request.user):
         cuadrillas_jefe = Cuadrilla.objects.filter(proyecto__jefe=request.user)
         if cuadrillas_jefe.filter(lider=other).exists():
             permitido = True
@@ -185,11 +186,11 @@ def solicitudes_list(request):
     from personal.models import Asignacion
     # Obtener las cuadrillas donde el usuario es líder
     cuadrillas = []
-    if request.user.groups.filter(name='LiderCuadrilla').exists():
+    if es_lider_cuadrilla(request.user):
         # Los líderes vienen definidos en el FK `Cuadrilla.lider`
         from personal.models import Cuadrilla
         cuadrillas = list(Cuadrilla.objects.filter(lider=request.user))
-    elif request.user.groups.filter(name='JefeProyecto').exists():
+    elif es_jefe_proyecto(request.user):
         # Los jefes de proyecto ven todas las solicitudes
         from personal.models import Cuadrilla
         cuadrillas = Cuadrilla.objects.all()
@@ -206,11 +207,11 @@ def actualizar_solicitud(request, solicitud_id):
     # Verificar permisos
     from personal.models import Asignacion
     tiene_permiso = False
-    if request.user.groups.filter(name='LiderCuadrilla').exists():
+    if es_lider_cuadrilla(request.user):
         # permitir si el usuario es el líder de la cuadrilla de la solicitud
         if solicitud.cuadrilla and solicitud.cuadrilla.lider_id == request.user.id:
             tiene_permiso = True
-    elif request.user.groups.filter(name='JefeProyecto').exists():
+    elif es_jefe_proyecto(request.user):
         tiene_permiso = True
 
     if not tiene_permiso:
@@ -231,10 +232,10 @@ def incidentes_list(request):
     from personal.models import Asignacion
     # Obtener las cuadrillas donde el usuario es líder
     cuadrillas = []
-    if request.user.groups.filter(name='LiderCuadrilla').exists():
+    if es_lider_cuadrilla(request.user):
         from personal.models import Cuadrilla
         cuadrillas = list(Cuadrilla.objects.filter(lider=request.user))
-    elif request.user.groups.filter(name='JefeProyecto').exists():
+    elif es_jefe_proyecto(request.user):
         # Los jefes de proyecto ven todos los incidentes
         from personal.models import Cuadrilla
         cuadrillas = Cuadrilla.objects.all()

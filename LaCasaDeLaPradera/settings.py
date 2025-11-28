@@ -40,8 +40,6 @@ INSTALLED_APPS = [
     "core",
     "usuarios",
     "proyectos",
-    "tareas",
-    "recursos",
     'personal.apps.PersonalConfig',
     'comunicacion.apps.ComunicacionConfig',
     ]
@@ -135,7 +133,7 @@ LOGIN_URL = '/usuarios/login/'              # si alguien no logeado intenta entr
 LOGIN_REDIRECT_URL = '/dashboard/'          # destino tras login exitoso
 LOGOUT_REDIRECT_URL = '/usuarios/login/'    # a dónde va tras cerrar sesión
 
-app_name = 'tareas'
+app_name = 'LaCasaDeLaPradera'
 
 # Seccion para el almacenamiento de archivos subidos por los usuarios (PDF certificaciones)
 

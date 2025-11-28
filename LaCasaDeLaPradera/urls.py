@@ -31,8 +31,7 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),
     path('personal/', include('personal.urls')),
     path('proyectos/', include('proyectos.urls')),
-    path('tareas/', include('tareas.urls')),
-    path('recursos/', include('recursos.urls')),
+    # Apps removidas: tareas y recursos
     path('comunicacion/', include('comunicacion.urls')),
 ]
 # Servir archivos media en desarrollo (DEBUG=True)
