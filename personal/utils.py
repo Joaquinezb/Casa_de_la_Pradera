@@ -164,8 +164,14 @@ def enriquecer_trabajador_con_info(trabajador):
     # Determinar si está ocupado
     trabajador.ocupado = esta_trabajador_ocupado(trabajador)
     
-    # Obtener estado real
-    trabajador.estado_real = obtener_disponibilidad_trabajador(trabajador)
+    # Obtener perfil y estado real
+    perfil = None
+    if trabajador.user:
+        perfil, _ = TrabajadorPerfil.objects.get_or_create(
+            user=trabajador.user,
+            defaults={'estado_manual': 'disponible'}
+        )
+    trabajador.estado_real = obtener_disponibilidad_trabajador(trabajador, perfil)
     
     # Obtener certificaciones
     certificaciones = CertificacionTrabajador.objects.filter(trabajador=trabajador)

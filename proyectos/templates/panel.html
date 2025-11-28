@@ -184,6 +184,7 @@
         <div class="card-body">
             <h5>Cuadrillas sin proyecto</h5>
             <ul>
+            {% load custom_tags %}
             {% for entry in cuadrillas_sin_proyecto %}
                 {% with c=entry.cuadrilla %}
                 <li class="mb-3">
@@ -191,12 +192,12 @@
                     — Líder: {{ c.lider.username|default:"(Sin líder)" }}
                     — ({{ c.asignaciones.count }} trabajadores)
                     <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-outline-primary ms-2">Ver</a>
-                    {% if entry.can_edit %}
+                    {% if entry.can_edit or request.user|has_group:'JefeProyecto' and not c.proyecto %}
                         <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-outline-secondary ms-2">Editar</a>
                     {% else %}
                         <button class="btn btn-sm btn-outline-secondary ms-2" disabled title="No autorizado">Editar</button>
                     {% endif %}
-                    {% if entry.can_disolver %}
+                    {% if entry.can_disolver or request.user|has_group:'JefeProyecto' and not c.proyecto %}
                         <form method="post" action="{% url 'personal:disolver_cuadrilla' c.id %}" class="form-inline">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-danger ms-2" onclick="return confirm('¿Deseas disolver la cuadrilla &quot;{{ c.nombre }}&quot;? Esta acción eliminará la cuadrilla y sus asignaciones.')">Disolver</button>

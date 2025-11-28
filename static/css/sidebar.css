@@ -1,6 +1,29 @@
 /* Navegación lateral empresarial */
 .sidebar-section { margin-bottom: var(--space-5); }
-.sidebar-section .section-title { color: var(--color-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-2); }
-.sidebar-item { display: flex; align-items: center; gap: var(--space-3); padding: 10px 12px; border-radius: var(--radius-md); color: var(--color-text); text-decoration: none; }
-.sidebar-item:hover { background: rgba(37, 99, 235, 0.12); color: var(--color-primary); }
-.sidebar-item--active { background: rgba(37, 99, 235, 0.18); color: var(--color-primary); }
+.sidebar-section .section-title {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-2);
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.sidebar-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--primary);
+}
+.sidebar-item--active {
+  background: var(--primary-light);
+  color: var(--text-white);
+  font-weight: 500;
+}

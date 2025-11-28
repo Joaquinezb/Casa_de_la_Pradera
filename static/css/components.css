@@ -1,16 +1,58 @@
 /* Componentes reutilizables: cards, badges, botones */
 .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
-.card-kpi { background: #ffffff; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-5); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-.card-kpi .heading { color: var(--color-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
-.card-kpi .number { font-size: 28px; font-weight: 700; color: var(--color-text); }
+.card-kpi {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+.card-kpi:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.card-kpi .heading {
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+.card-kpi .number {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: var(--space-2);
+}
 
-.badge-status { padding: 4px 10px; border-radius: var(--radius-sm); font-size: 12px; }
-.badge--en-progreso { background: #dbeafe; color: #1e40af; }
-.badge--completado { background: #dcfce7; color: #166534; }
-.badge--pendiente  { background: #f1f5f9; color: #475569; }
+/* Badges de estado - usando colores semánticos */
+.badge-status { padding: 4px 10px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; }
+.badge--en-progreso { background: #fef3c7; color: #92400e; }
+.badge--completado { background: #d1fae5; color: #065f46; }
+.badge--pendiente  { background: #ede9fe; color: #5b21b6; }
 .badge--atrasado   { background: #fee2e2; color: #991b1b; }
 
+/* Timeline mejorado */
 .timeline { position: relative; padding-left: 24px; }
-.timeline::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--color-border); }
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-light);
+}
 .timeline-item { position: relative; margin-bottom: var(--space-4); }
-.timeline-item::before { content: ""; position: absolute; left: -2px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--color-primary); }
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 3px var(--bg-primary);
+}

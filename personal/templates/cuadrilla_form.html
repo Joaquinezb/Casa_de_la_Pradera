@@ -86,6 +86,7 @@
                 <option value="vacaciones">Vacaciones</option>
                 <option value="licencia">Licencia</option>
                 <option value="inactivo">Inactivo</option>
+                <option value="no_disponible">No disponible</option>
             </select>
         </div>
 
@@ -128,7 +129,7 @@
             <tr class="fila-trabajador {% if t.ocupado %}table-danger{% elif t.estado_real == 'licencia' or t.estado_real == 'vacaciones' %}table-warning{% endif %}"
             data-nombre="{{ t.nombre|lower }} {{ t.apellido|lower }}"
             data-especialidad="{{ t.especialidad|default:'ninguna'|lower }}"
-            data-disponibilidad="{{ t.estado_real|lower }}"
+            data-disponibilidad="{% if t.ocupado %}ocupado{% elif t.estado_real %}{{ t.estado_real|lower }}{% else %}no_disponible{% endif %}"
             data-certificaciones="{% if t.tiene_certificaciones %}tiene{% else %}sin{% endif %}"
             data-cert-list="{{ t.certificacion_lista|join:',' }}">
 
@@ -162,8 +163,12 @@
                     <span class="badge bg-warning text-dark">Vacaciones</span>
                 {% elif t.estado_real == 'licencia' %}
                     <span class="badge bg-warning text-dark">Licencia</span>
-                {% else %}
+                {% elif t.estado_real == 'disponible' %}
+                    <span class="badge bg-success">Disponible</span>
+                {% elif t.estado_real %}
                     <span class="badge bg-success">{{ t.estado_real }}</span>
+                {% else %}
+                    <span class="badge bg-secondary">—</span>
                 {% endif %}
             </td>
 

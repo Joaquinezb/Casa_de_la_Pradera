@@ -240,7 +240,7 @@ def crear_cuadrilla(request):
         Trabajador.objects
         .filter(activo=True, tipo_trabajador=TiposTrabajador.TRABAJADOR)
         .select_related("user")
-        .prefetch_related("certificaciones_trabajador")
+        .prefetch_related("certificaciones_trabajador", "user__perfil_trabajador")
     )
 
     roles = Rol.objects.all()
@@ -638,9 +638,14 @@ def disolver_cuadrilla(request, cuadrilla_id):
         )
         return redirect('personal:detalle_cuadrilla', cuad.id)
 
-    # Verificar permisos
+    # Verificar permisos: cualquier Jefe puede disolver si no hay proyecto;
+    # o el Líder asignado puede disolver su propia cuadrilla.
     user = request.user
-    permitido = es_lider_cuadrilla(user) and cuad.lider_id == user.id
+    permitido = False
+    if es_jefe_proyecto(user) and cuad.proyecto is None:
+        permitido = True
+    elif es_lider_cuadrilla(user) and cuad.lider_id == user.id:
+        permitido = True
 
     if not permitido:
         crear_notificacion(user, MensajesNotificacion.sin_permiso_disolver_cuadrilla())
