@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/proyectos/proyectos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="grid grid--cols-3">
+  <div class="card">
+    <div class="card-title">Proyectos activos</div>
+    <div class="card-subtitle">Resumen</div>
+    <div class="card-grid">
+      <div class="card-kpi">
+        <div class="heading">En progreso</div>
+        <div class="number">12</div>
+      </div>
+      <div class="card-kpi">
+        <div class="heading">Completados</div>
+        <div class="number">8</div>
+      </div>
+      <div class="card-kpi">
+        <div class="heading">Atrasados</div>
+        <div class="number">3</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Timeline</div>
+    <div class="timeline proyecto-timeline">
+      <div class="timeline-item">Planificación</div>
+      <div class="timeline-item">Ejecución</div>
+      <div class="timeline-item">Cierre</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Calendario</div>
+    <div class="card-subtitle">Asignaciones de esta semana</div>
+    <div class="badge badge--muted">Próximamente</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 24px;">
+  <div class="table-toolbar">
+    <div class="table-filter">
+      <input class="form-control table-search" type="search" placeholder="Buscar proyecto">
+      <select class="form-control">
+        <option>Todos</option>
+        <option>En progreso</option>
+        <option>Completado</option>
+        <option>Atrasado</option>
+      </select>
+    </div>
+    <div>
+      <button class="btn btn--primary">Nuevo proyecto</button>
+    </div>
+  </div>
+  <table class="table">
+    <thead>
+      <tr><th>Nombre</th><th>Estado</th><th>Fecha Inicio</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Edificio Central</td>
+        <td><span class="badge-status badge--en-progreso">En progreso</span></td>
+        <td>2025-11-01</td>
+        <td><button class="btn btn--ghost">Ver</button></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/table-filters.js' %}"></script>
+{% endblock %}

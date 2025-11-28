@@ -498,15 +498,15 @@ def detalle_cuadrilla(request, cuadrilla_id):
     # Prefetch competencias, certificaciones y experiencias
     competencias = (CompetenciaTrabajador.objects
                    .filter(trabajador__in=trabajadores)
-                   .select_related('competencia', 'trabajador__user'))
+                   .select_related('trabajador', 'trabajador__user'))
     
     certificaciones = (CertificacionTrabajador.objects
                       .filter(trabajador__in=trabajadores)
-                      .select_related('certificacion', 'trabajador__user'))
+                      .select_related('trabajador', 'trabajador__user'))
     
     experiencias = (ExperienciaTrabajador.objects
                    .filter(trabajador__in=trabajadores)
-                   .select_related('experiencia', 'trabajador__user'))
+                   .select_related('trabajador', 'trabajador__user'))
 
     # Mapas para template
     comp_map = {}

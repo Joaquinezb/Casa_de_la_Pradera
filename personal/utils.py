@@ -15,13 +15,13 @@ from .constants import UserGroups, EstadosTrabajador
 
 # ===================================================================
 # UTILIDADES DE PERMISOS
-def obtener_disponibilidad_trabajador(trabajador, perfil):
+def obtener_disponibilidad_trabajador(trabajador, perfil=None):
     """
     Obtiene la disponibilidad de un trabajador usando lógica unificada.
     
     Args:
         trabajador: Instancia de Trabajador (puede ser None)
-        perfil: Instancia de TrabajadorPerfil (puede ser None)
+        perfil: Instancia de TrabajadorPerfil (opcional, puede ser None)
         
     Returns:
         str: Estado de disponibilidad del trabajador o '—' si no disponible
@@ -125,30 +125,6 @@ def puede_ver_cuadrilla(user, cuadrilla):
 # ===================================================================
 # UTILIDADES DE TRABAJADORES
 # ===================================================================
-
-def obtener_disponibilidad_trabajador(trabajador):
-    """
-    Calcula la disponibilidad actual de un trabajador.
-    
-    Prioriza el estado manual si manual_override está activo,
-    de lo contrario usa el estado efectivo del perfil.
-    
-    Args:
-        trabajador: Instancia de Trabajador
-        
-    Returns:
-        str: Estado de disponibilidad del trabajador
-    """
-    if getattr(trabajador, 'manual_override', False):
-        return trabajador.estado
-    
-    if trabajador.user:
-        perfil = TrabajadorPerfil.objects.filter(user=trabajador.user).first()
-        if perfil:
-            return perfil.estado_efectivo
-    
-    return EstadosTrabajador.DISPONIBLE
-
 
 def esta_trabajador_ocupado(trabajador):
     """

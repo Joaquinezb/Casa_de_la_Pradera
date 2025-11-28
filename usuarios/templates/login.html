@@ -1,12 +1,32 @@
-<form method="POST">
-  {% csrf_token %}
-  <label>Usuario:</label>
-  <input type="text" name="username" required>
-  <label>Contraseña:</label>
-  <input type="password" name="password" required>
-  <button type="submit">Iniciar sesión</button>
+{% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/forms.css' %}">
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
 
-  {% if error %}
-  <p style="color:red;">{{ error }}</p>
-  {% endif %}
-</form>
+{% block content %}
+<div class="card auth-card">
+  <div class="card-title">Iniciar sesión</div>
+  <form method="POST">
+    {% csrf_token %}
+    {% if error %}
+      <div class="badge badge--danger auth-error">{{ error }}</div>
+    {% endif %}
+    <div class="form-row">
+      <div>
+        <label class="label" for="id_username">Usuario</label>
+        <input id="id_username" class="form-control" type="text" name="username" required>
+      </div>
+      <div>
+        <label class="label" for="id_password">Contraseña</label>
+        <input id="id_password" class="form-control" type="password" name="password" required>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Iniciar sesión</button>
+      <a href="/" class="btn btn--ghost">Volver</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+    <h2 style="margin-bottom: 8px;">Dashboard</h2>
+    <p style="color: var(--color-muted);">Vista general del sistema</p>
+</div>
+
+<!-- Métricas principales (KPIs) -->
+<div class="dashboard-metrics">
+    <div class="card-kpi">
+        <div class="heading">Proyectos Activos</div>
+        <div class="number">{{ proyectos_activos }}</div>
+    </div>
+    <div class="card-kpi">
+        <div class="heading">Proyectos Finalizados</div>
+        <div class="number">{{ proyectos_finalizados }}</div>
+    </div>
+    <div class="card-kpi">
+        <div class="heading">Cuadrillas Activas</div>
+        <div class="number">{{ cuadrillas_activas }}</div>
+    </div>
+    <div class="card-kpi">
+        <div class="heading">Trabajadores Disponibles</div>
+        <div class="number">{{ trabajadores_disponibles }}/{{ total_trabajadores }}</div>
+    </div>
+</div>
+
+<!-- Grid de información -->
+<div class="grid grid--cols-2" style="margin-top: 24px;">
+    <!-- Proyectos recientes -->
+    <div class="card">
+        <div class="card-title">Proyectos Recientes</div>
+        {% if proyectos_recientes %}
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            {% for proyecto in proyectos_recientes %}
+            <li style="padding: 12px 0; border-bottom: 1px solid var(--color-border);">
+                <strong>{{ proyecto.nombre }}</strong>
+                <div style="font-size: 13px; color: var(--color-muted); margin-top: 4px;">
+                    Jefe: {{ proyecto.jefe.get_full_name|default:proyecto.jefe.username }}
+                    | Inicio: {{ proyecto.fecha_inicio }}
+                </div>
+                <div style="margin-top: 8px;">
+                    <a href="{% url 'proyectos:panel' %}" class="btn btn--ghost" style="padding: 4px 10px; font-size: 13px;">Ver detalles</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p style="color: var(--color-muted);">No hay proyectos activos recientes.</p>
+        {% endif %}
+        
+        {% if is_jefe %}
+        <div style="margin-top: 16px;">
+            <a href="{% url 'proyectos:nuevo' %}" class="btn btn--primary">+ Nuevo Proyecto</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Cuadrillas sin asignar -->
+    <div class="card">
+        <div class="card-title">Cuadrillas Sin Proyecto</div>
+        <div class="card-subtitle">{{ cuadrillas_sin_proyecto }} cuadrilla(s) disponible(s)</div>
+        {% if cuadrillas_disponibles %}
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            {% for cuadrilla in cuadrillas_disponibles %}
+            <li style="padding: 12px 0; border-bottom: 1px solid var(--color-border);">
+                <strong>{{ cuadrilla.nombre }}</strong>
+                <div style="font-size: 13px; color: var(--color-muted); margin-top: 4px;">
+                    Líder: {{ cuadrilla.lider.username|default:"Sin líder" }}
+                    | Trabajadores: {{ cuadrilla.asignaciones.count }}
+                </div>
+                <div style="margin-top: 8px;">
+                    <a href="{% url 'personal:detalle_cuadrilla' cuadrilla.id %}" class="btn btn--ghost" style="padding: 4px 10px; font-size: 13px;">Ver cuadrilla</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p style="color: var(--color-muted);">Todas las cuadrillas están asignadas a proyectos.</p>
+        {% endif %}
+        
+        {% if is_jefe %}
+        <div style="margin-top: 16px;">
+            <a href="{% url 'personal:crear_cuadrilla' %}" class="btn btn--primary">+ Nueva Cuadrilla</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Accesos rápidos -->
+<div class="card" style="margin-top: 24px;">
+    <div class="card-title">Accesos Rápidos</div>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="{% url 'proyectos:panel' %}" class="btn btn--ghost">Ver Todos los Proyectos</a>
+        <a href="{% url 'comunicacion:conversations_list' %}" class="btn btn--ghost">Conversaciones</a>
+        <a href="{% url 'personal:mis_notificaciones' %}" class="btn btn--ghost">Notificaciones</a>
+        {% if is_jefe %}
+        <a href="{% url 'proyectos:nuevo' %}" class="btn btn--primary">+ Nuevo Proyecto</a>
+        <a href="{% url 'personal:crear_cuadrilla' %}" class="btn btn--primary">+ Nueva Cuadrilla</a>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

@@ -1,107 +1,70 @@
 {% load custom_tags %}
+{% load static %}
 
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>La Casa de la Pradera</title>
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tables.css' %}">
+    <link rel="stylesheet" href="{% static 'css/forms.css' %}">
+    {% block extra_css %}{% endblock %}
 </head>
 
-<body>
+<body class="app-shell">
 
 {% if request.user.is_authenticated and request.path != '/usuarios/login/' and request.path != '/accounts/login/' %}
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-    <div class="container-fluid">
+<aside class="app-sidebar">
+    <div class="sidebar-title">La Casa de la Pradera</div>
 
-        <a class="navbar-brand" href="{% url 'dashboard' %}">
-            La Casa de la Pradera
-        </a>
+    <nav>
+        <ul class="sidebar-nav">
+            <li>
+                <a href="{% url 'dashboard' %}"
+                   {% if request.path == '/' or request.path|slice:":10" == '/dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+            </li>
+            <li>
+                <a href="{% url 'proyectos:panel' %}"
+                   {% if '/proyectos' in request.path %}aria-current="page"{% endif %}>Gestión de proyectos</a>
+            </li>
+            <li>
+                <a href="{% url 'personal:crear_cuadrilla' %}"
+                   {% if '/personal' in request.path %}aria-current="page"{% endif %}>Gestión de cuadrillas</a>
+            </li>
+        </ul>
+    </nav>
+</aside>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#menuPrincipal">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="menuPrincipal">
-
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-
-                <!-- JEFE -->
-                {% if request.user|has_group:"JefeProyecto" %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'proyectos:panel' %}">Proyectos</a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'personal:crear_cuadrilla' %}">
-                            Crear Cuadrilla
-                        </a>
-                    </li>
-                {% endif %}
-
-                <!-- LÍDER -->
-                {% if request.user|has_group:"LiderCuadrilla" %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'proyectos:panel' %}">Mis Cuadrillas</a>
-                    </li>
-                {% endif %}
-
-                <!-- TRABAJADOR -->
-                {% if request.user|has_group:"Trabajador" %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Mi Perfil</a>
-                    </li>
-                {% endif %}
-
-                <!-- COMUNICACIÓN: dropdown con accesos directos -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="comunicacionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Comunicaci&oacute;n
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="comunicacionDropdown">
-                        <li><a class="dropdown-item" href="{% url 'comunicacion:conversations_list' %}">Conversaciones</a></li>
-                        {% if archivos_archivados_count %}
-                        <li>
-                            <a class="dropdown-item d-flex justify-content-between align-items-center" href="{% url 'comunicacion:archived_list' %}">
-                                Archivadas
-                                <span class="badge bg-secondary ms-2">{{ archivos_archivados_count }}</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'personal:mis_notificaciones' %}">
-                        Notificaciones
-                        {% if notifs_sin_leer > 0 %}
-                            <span class="badge bg-danger">{{ notifs_sin_leer }}</span>
-                        {% endif %}
-                    </a>
-                </li>
-
-            </ul>
-
-            <span class="navbar-text text-light me-3">
-                {{ request.user.first_name }} {{ request.user.last_name }}
-            </span>
-
-            <a href="{% url 'usuarios:logout' %}" class="btn btn-outline-light">Cerrar sesión</a>
-
-        </div>
+<header class="app-header">
+    <div class="header-left">
+        <span class="badge badge--muted">Entorno</span>
     </div>
-</nav>
+    <div class="header-actions">
+        <a class="btn btn--ghost" href="{% url 'comunicacion:conversations_list' %}">Conversaciones</a>
+        <a class="btn btn--ghost" href="{% url 'personal:mis_notificaciones' %}">
+            Notificaciones
+            {% if notifs_sin_leer > 0 %}
+            <span class="badge badge--danger">{{ notifs_sin_leer }}</span>
+            {% endif %}
+        </a>
+        <span class="badge badge--muted">{{ request.user.first_name }} {{ request.user.last_name }}</span>
+        <a href="{% url 'usuarios:logout' %}" class="btn btn--primary">Cerrar sesión</a>
+    </div>
+</header>
 
 {% endif %}
 
-<main class="container">
+<main class="app-content">
     {% block content %}{% endblock %}
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
 
 </body>
 </html>

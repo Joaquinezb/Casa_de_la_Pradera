@@ -1,0 +1,4 @@
+/* Estilos específicos de la app Personal/Cuadrillas */
+.cuadrilla-card { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.cuadrilla-list .cuadrilla-item { padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.cuadrilla-estado { margin-left: auto; }

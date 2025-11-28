@@ -1,61 +1,72 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tables.css' %}">
+<link rel="stylesheet" href="{% static 'css/comunicacion/comunicacion.css' %}">
+{% endblock %}
 {% block content %}
-<h2>Incidentes Reportados</h2>
+<div style="margin-bottom: 16px;">
+    <a href="{% url 'comunicacion:conversations_list' %}" class="btn btn--ghost">← Volver a comunicación</a>
+</div>
 
-{% if incidentes %}
-<table border="1" cellpadding="5">
-    <thead>
-        <tr>
-            <th>Reportado por</th>
-            <th>Cuadrilla</th>
-            <th>Descripción</th>
-            <th>Severidad</th>
-            <th>Fecha</th>
-            <th>Reconocido</th>
-            <th>Acción</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for incidente in incidentes %}
-        <tr>
-            <td>{{ incidente.reporter.username|default:'Anónimo' }}</td>
-            <td>{{ incidente.cuadrilla.nombre|default:'Sin cuadrilla' }}</td>
-            <td>{{ incidente.descripcion }}</td>
-            <td>
-                {% if incidente.severidad == 'low' %}
-                    <span style="color: green;">Baja</span>
-                {% elif incidente.severidad == 'medium' %}
-                    <span style="color: orange;">Media</span>
-                {% elif incidente.severidad == 'high' %}
-                    <span style="color: red;">Alta</span>
-                {% endif %}
-            </td>
-            <td>{{ incidente.created_at|date:"d/m/Y H:i" }}</td>
-            <td>
-                {% if incidente.acknowledged %}
-                    Sí
-                {% else %}
-                    <strong>No</strong>
-                {% endif %}
-            </td>
-            <td>
-                {% if not incidente.acknowledged %}
-                <form method="post" action="{% url 'comunicacion:marcar_incidente_visto' incidente.pk %}">
-                    {% csrf_token %}
-                    <button type="submit">Marcar como visto</button>
-                </form>
-                {% else %}
-                    -
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>No hay incidentes reportados.</p>
-{% endif %}
-
-<hr>
-<p><a href="{% url 'comunicacion:conversations_list' %}">Volver a conversaciones</a></p>
+<div class="card">
+    <div class="card-title">Incidentes Reportados</div>
+    <div class="card-subtitle">Gestiona los incidentes de seguridad y operaciones</div>
+    
+    {% if incidentes %}
+    <div style="overflow-x: auto;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Reportado por</th>
+                    <th>Cuadrilla</th>
+                    <th>Descripción</th>
+                    <th>Severidad</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for incidente in incidentes %}
+                <tr>
+                    <td><strong>{{ incidente.reporter.get_full_name|default:incidente.reporter.username|default:'Anónimo' }}</strong></td>
+                    <td>{{ incidente.cuadrilla.nombre|default:'Sin cuadrilla' }}</td>
+                    <td>{{ incidente.descripcion|truncatewords:20 }}</td>
+                    <td>
+                        {% if incidente.severidad == 'low' %}
+                            <span class="badge badge--success">Baja</span>
+                        {% elif incidente.severidad == 'medium' %}
+                            <span class="badge badge--warning">Media</span>
+                        {% elif incidente.severidad == 'high' %}
+                            <span class="badge badge--danger">Alta</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ incidente.created_at|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if incidente.acknowledged %}
+                            <span class="badge badge--muted">Reconocido</span>
+                        {% else %}
+                            <span class="badge badge--warning">Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not incidente.acknowledged %}
+                        <form method="post" action="{% url 'comunicacion:marcar_incidente_visto' incidente.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn--primary" style="padding: 4px 10px; font-size: 13px;">Marcar como visto</button>
+                        </form>
+                        {% else %}
+                            <span style="color: var(--color-muted);">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="color: var(--color-muted); text-align: center; padding: 48px 24px;">No hay incidentes reportados.</p>
+    {% endif %}
+</div>
 {% endblock %}

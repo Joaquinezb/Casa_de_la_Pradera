@@ -1,0 +1,5 @@
+/* Tablas y listas empresariales */
+.table-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); }
+.table-filter { display: flex; gap: var(--space-3); }
+.table-search { max-width: 280px; }
+.pagination { display: flex; gap: var(--space-2); }

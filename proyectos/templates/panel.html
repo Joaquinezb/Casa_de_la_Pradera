@@ -1,4 +1,8 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/proyectos/proyectos.css' %}">
+{% endblock %}
 {% block content %}
 <h2>Panel de Gestión de Proyectos</h2>
 
@@ -49,7 +53,7 @@
         <h4>
             {{ item.proyecto.nombre }}
             {% if item.can_edit_project %}
-            <a href="{% url 'proyectos:editar' item.proyecto.id %}" class="btn btn-sm btn-outline-secondary ms-2" title="Editar proyecto" style="padding:0.15rem 0.4rem; font-size:0.9rem; vertical-align:middle;">
+            <a href="{% url 'proyectos:editar' item.proyecto.id %}" class="btn btn-sm btn-outline-secondary ms-2 btn-icon-sm" title="Editar proyecto">
                 &#9998;
             </a>
             {% endif %}
@@ -193,7 +197,7 @@
                         <button class="btn btn-sm btn-outline-secondary ms-2" disabled title="No autorizado">Editar</button>
                     {% endif %}
                     {% if entry.can_disolver %}
-                        <form method="post" action="{% url 'personal:disolver_cuadrilla' c.id %}" style="display:inline;">
+                        <form method="post" action="{% url 'personal:disolver_cuadrilla' c.id %}" class="form-inline">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-danger ms-2" onclick="return confirm('¿Deseas disolver la cuadrilla &quot;{{ c.nombre }}&quot;? Esta acción eliminará la cuadrilla y sus asignaciones.')">Disolver</button>
                         </form>

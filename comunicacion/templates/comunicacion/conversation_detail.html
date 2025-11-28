@@ -1,20 +1,73 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/comunicacion/comunicacion.css' %}">
+{% endblock %}
 {% block content %}
-<h2>Chat: {{ conversation }}</h2>
-<div class="mensajes">
-    {% for m in mensajes %}
-    <div>
-        <strong>{% if m.sender %}{{ m.sender.get_full_name|default:m.sender.username }}{% else %}Sistema{% endif %}</strong> <small>{{ m.created_at }}</small>
-        <p>{{ m.content }}</p>
-    </div>
-    {% empty %}
-    <p>No hay mensajes aún.</p>
-    {% endfor %}
+<div style="margin-bottom: 16px;">
+    <a href="{% url 'comunicacion:conversations_list' %}" class="btn btn--ghost">← Volver a conversaciones</a>
 </div>
-<hr>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Enviar</button>
-</form>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h3 style="margin: 0; font-size: 18px;">{{ conversation }}</h3>
+    </div>
+    
+    <div class="chat-messages" id="chatMessages">
+        {% if mensajes %}
+            {% for m in mensajes %}
+            <div class="message-bubble {% if m.sender == user %}mine{% else %}theirs{% endif %}">
+                <div class="message-sender">
+                    {% if m.sender %}{{ m.sender.get_full_name|default:m.sender.username }}{% else %}Sistema{% endif %}
+                </div>
+                <p class="message-content">{{ m.content }}</p>
+                <div class="message-time">{{ m.created_at|date:"d/m/Y H:i" }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-chat">
+                <p>No hay mensajes aún. ¡Sé el primero en escribir!</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="chat-input-area">
+        <form method="post" class="chat-input-form">
+            {% csrf_token %}
+            <textarea 
+                name="{{ form.content.html_name }}" 
+                class="form-control" 
+                placeholder="Escribe tu mensaje..."
+                rows="1"
+                required
+                id="messageInput"
+            ></textarea>
+            <button type="submit" class="btn btn--primary">Enviar</button>
+        </form>
+    </div>
+</div>
+
+<script>
+// Scroll automático al final de los mensajes
+const chatMessages = document.getElementById('chatMessages');
+if (chatMessages) {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Ajustar altura del textarea automáticamente
+const messageInput = document.getElementById('messageInput');
+if (messageInput) {
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+    
+    // Enviar con Ctrl+Enter
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+            this.form.submit();
+        }
+    });
+}
+</script>
 {% endblock %}

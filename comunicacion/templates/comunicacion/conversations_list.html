@@ -1,85 +1,105 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/comunicacion/comunicacion.css' %}">
+{% endblock %}
 {% block content %}
-<h2>Comunicación</h2>
+<div style="margin-bottom: 24px;">
+    <h2 style="margin-bottom: 8px;">Comunicación</h2>
+    <p style="color: var(--color-muted);">Gestiona conversaciones, solicitudes e incidentes</p>
+</div>
 
-<h3>Conversaciones</h3>
-<ul>
-    {% for c in conversations %}
-    <li>
-        <a href="{% url 'comunicacion:conversation_detail' c.pk %}">
-            {% if c.is_group and c.cuadrilla %}
-                Grupo: {{ c.cuadrilla.nombre }}
-            {% else %}
-                {# Mostrar el nombre explícito si existe, sino construir a partir de participantes #}
-                {% if c.nombre %}
-                    {{ c.nombre }}
-                {% else %}
-                    {% for p in c.participants.all %}
-                        {{ p.get_full_name|default:p.username }}{% if not forloop.last %}, {% endif %}
-                    {% empty %}
-                        Conversación privada
-                    {% endfor %}
-                {% endif %}
-            {% endif %}
-        </a>
-    </li>
-    {% empty %}
-    <li>No tienes conversaciones activas.</li>
-    {% endfor %}
-</ul>
+<div class="card">
+    <div class="card-title">Conversaciones Activas</div>
+    {% if conversations %}
+        {% for c in conversations %}
+        <div class="conversation-item">
+            <div>
+                <div class="conversation-title">
+                    {% if c.is_group and c.cuadrilla %}
+                        Grupo: {{ c.cuadrilla.nombre }}
+                    {% else %}
+                        {% if c.nombre %}
+                            {{ c.nombre }}
+                        {% else %}
+                            {% for p in c.participants.all %}
+                                {{ p.get_full_name|default:p.username }}{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                Conversación privada
+                            {% endfor %}
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <div class="conversation-meta">
+                    {% if c.is_group %}Grupo{% else %}Privada{% endif %}
+                </div>
+            </div>
+            <a href="{% url 'comunicacion:conversation_detail' c.pk %}" class="btn btn--ghost">Abrir</a>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: var(--color-muted);">No tienes conversaciones activas.</p>
+    {% endif %}
+</div>
 
 {% if not is_jefe %}
-<hr>
-<h3>Mi(s) Cuadrilla(s)</h3>
-{% if mis_cuadrillas %}
-    {% for item in mis_cuadrillas %}
-        <h4>{{ item.cuadrilla.nombre }}</h4>
-        <ul>
-            {% for m in item.miembros %}
-            <li>
-                {% with user=m.user %}
-                    <strong>{{ user.get_full_name|default:user.username }}</strong>
-                    {% if m.rol %} — <em>{{ m.rol }}</em>{% endif %}
-                    - <a href="{% url 'comunicacion:crear_privada' user.pk %}">Enviar privado</a>
-                {% endwith %}
-            </li>
-            {% empty %}
-            <li>No hay otros miembros en esta cuadrilla.</li>
-            {% endfor %}
-        </ul>
-    {% endfor %}
-{% else %}
-    <p>No perteneces a ninguna cuadrilla todavía.</p>
-{% endif %}
+<hr class="section-divider">
+<div class="card">
+    <div class="card-title">Mi(s) Cuadrilla(s)</div>
+    {% if mis_cuadrillas %}
+        {% for item in mis_cuadrillas %}
+            <h4 style="margin-top: 16px; margin-bottom: 12px;">{{ item.cuadrilla.nombre }}</h4>
+            <ul class="member-list">
+                {% for m in item.miembros %}
+                <li class="member-item">
+                    {% with user=m.user %}
+                        <div>
+                            <strong>{{ user.get_full_name|default:user.username }}</strong>
+                            {% if m.rol %}<span style="color: var(--color-muted); margin-left: 8px;">{{ m.rol }}</span>{% endif %}
+                        </div>
+                        <a href="{% url 'comunicacion:crear_privada' user.pk %}" class="btn btn--ghost" style="padding: 4px 10px; font-size: 13px;">Enviar mensaje</a>
+                    {% endwith %}
+                </li>
+                {% empty %}
+                <li class="member-item" style="color: var(--color-muted);">No hay otros miembros en esta cuadrilla.</li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    {% else %}
+        <p style="color: var(--color-muted);">No perteneces a ninguna cuadrilla todavía.</p>
+    {% endif %}
+</div>
 {% endif %}
 
 {% if lideres_proyecto %}
-<hr>
-<h3>Líderes de cuadrillas de tus proyectos</h3>
-<ul>
-    {% for lider in lideres_proyecto %}
-    <li>
-        <strong>{{ lider.get_full_name|default:lider.username }}</strong>
-        - <a href="{% url 'comunicacion:crear_privada' lider.pk %}">Enviar privado</a>
-    </li>
-    {% empty %}
-    <li>No hay líderes asignados a tus proyectos.</li>
-    {% endfor %}
-</ul>
+<hr class="section-divider">
+<div class="card">
+    <div class="card-title">Líderes de Cuadrillas de Tus Proyectos</div>
+    <ul class="member-list">
+        {% for lider in lideres_proyecto %}
+        <li class="member-item">
+            <strong>{{ lider.get_full_name|default:lider.username }}</strong>
+            <a href="{% url 'comunicacion:crear_privada' lider.pk %}" class="btn btn--ghost" style="padding: 4px 10px; font-size: 13px;">Enviar mensaje</a>
+        </li>
+        {% empty %}
+        <li class="member-item" style="color: var(--color-muted);">No hay líderes asignados a tus proyectos.</li>
+        {% endfor %}
+    </ul>
+</div>
 {% endif %}
 
-<hr>
+<hr class="section-divider">
 
-<h3>Acciones</h3>
-<ul>
-    <li><a href="{% url 'comunicacion:enviar_solicitud' %}">Enviar solicitud</a></li>
-    <li><a href="{% url 'comunicacion:reportar_incidente' %}">Reportar incidente</a></li>
-    {% if user.groups.all|join:", " == "LiderCuadrilla" or user.groups.all|join:", " == "JefeProyecto" %}
-    <li><a href="{% url 'comunicacion:solicitudes_list' %}">Ver solicitudes de trabajadores</a></li>
-    <li><a href="{% url 'comunicacion:incidentes_list' %}">Ver incidentes reportados</a></li>
-    {% endif %}
-</ul>
+<div class="card">
+    <div class="card-title">Acciones Rápidas</div>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px;">
+        <a href="{% url 'comunicacion:enviar_solicitud' %}" class="btn btn--primary">Enviar Solicitud</a>
+        <a href="{% url 'comunicacion:reportar_incidente' %}" class="btn btn--primary">Reportar Incidente</a>
+        {% if user.groups.all|join:", " == "LiderCuadrilla" or user.groups.all|join:", " == "JefeProyecto" %}
+        <a href="{% url 'comunicacion:solicitudes_list' %}" class="btn btn--ghost">Ver Solicitudes</a>
+        <a href="{% url 'comunicacion:incidentes_list' %}" class="btn btn--ghost">Ver Incidentes</a>
+        {% endif %}
+    </div>
+</div>
 
-<hr>
-<p><a href="/">Volver al inicio</a></p>
 {% endblock %}

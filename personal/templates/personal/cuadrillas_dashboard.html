@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/personal/cuadrillas.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="grid grid--cols-2">
+  <div class="card">
+    <div class="card-title">Mis cuadrillas</div>
+    <div class="cuadrilla-list">
+      <div class="cuadrilla-item">
+        Carpinteros Norte
+        <span class="badge-status badge--en-progreso cuadrilla-estado">Activa</span>
+      </div>
+      <div class="cuadrilla-item">
+        Albañiles Centro
+        <span class="badge-status badge--pendiente cuadrilla-estado">Pendiente</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Asignaciones</div>
+    <div class="badge badge--muted">Calendario próximamente</div>
+  </div>
+</div>
+{% endblock %}

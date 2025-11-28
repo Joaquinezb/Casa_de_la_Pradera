@@ -1,0 +1,4 @@
+/* Formularios empresariales */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.form-actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-4); }
+@media (max-width: 900px) { .form-row { grid-template-columns: 1fr; } }

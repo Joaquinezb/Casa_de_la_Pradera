@@ -1,61 +1,74 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tables.css' %}">
+<link rel="stylesheet" href="{% static 'css/comunicacion/comunicacion.css' %}">
+{% endblock %}
 {% block content %}
-<h2>Solicitudes de Trabajadores</h2>
+<div style="margin-bottom: 16px;">
+    <a href="{% url 'comunicacion:conversations_list' %}" class="btn btn--ghost">← Volver a comunicación</a>
+</div>
 
-{% if solicitudes %}
-<table border="1" cellpadding="5">
-    <thead>
-        <tr>
-            <th>Trabajador</th>
-            <th>Cuadrilla</th>
-            <th>Asunto</th>
-            <th>Descripción</th>
-            <th>Estado</th>
-            <th>Fecha</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for solicitud in solicitudes %}
-        <tr>
-            <td>{{ solicitud.trabajador.username }}</td>
-            <td>{{ solicitud.cuadrilla.nombre|default:'Sin cuadrilla' }}</td>
-            <td>{{ solicitud.asunto }}</td>
-            <td>{{ solicitud.descripcion|truncatewords:20 }}</td>
-            <td>
-                {% if solicitud.estado == 'pending' %}
-                    <span style="color: orange;">Pendiente</span>
-                {% elif solicitud.estado == 'accepted' %}
-                    <span style="color: green;">Aceptada</span>
-                {% elif solicitud.estado == 'rejected' %}
-                    <span style="color: red;">Rechazada</span>
-                {% endif %}
-            </td>
-            <td>{{ solicitud.created_at|date:"d/m/Y H:i" }}</td>
-            <td>
-                {% if solicitud.estado == 'pending' %}
-                <form method="post" action="{% url 'comunicacion:actualizar_solicitud' solicitud.pk %}" style="display:inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="estado" value="accepted">
-                    <button type="submit">Aceptar</button>
-                </form>
-                <form method="post" action="{% url 'comunicacion:actualizar_solicitud' solicitud.pk %}" style="display:inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="estado" value="rejected">
-                    <button type="submit">Rechazar</button>
-                </form>
-                {% else %}
-                    -
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>No hay solicitudes.</p>
-{% endif %}
-
-<hr>
-<p><a href="{% url 'comunicacion:conversations_list' %}">Volver a conversaciones</a></p>
+<div class="card">
+    <div class="card-title">Solicitudes de Trabajadores</div>
+    <div class="card-subtitle">Gestiona las solicitudes recibidas</div>
+    
+    {% if solicitudes %}
+    <div style="overflow-x: auto;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Trabajador</th>
+                    <th>Cuadrilla</th>
+                    <th>Asunto</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for solicitud in solicitudes %}
+                <tr>
+                    <td><strong>{{ solicitud.trabajador.get_full_name|default:solicitud.trabajador.username }}</strong></td>
+                    <td>{{ solicitud.cuadrilla.nombre|default:'Sin cuadrilla' }}</td>
+                    <td>{{ solicitud.asunto }}</td>
+                    <td>{{ solicitud.descripcion|truncatewords:15 }}</td>
+                    <td>
+                        {% if solicitud.estado == 'pending' %}
+                            <span class="badge badge--warning">Pendiente</span>
+                        {% elif solicitud.estado == 'accepted' %}
+                            <span class="badge badge--success">Aceptada</span>
+                        {% elif solicitud.estado == 'rejected' %}
+                            <span class="badge badge--danger">Rechazada</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ solicitud.created_at|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if solicitud.estado == 'pending' %}
+                        <div style="display: flex; gap: 8px;">
+                            <form method="post" action="{% url 'comunicacion:actualizar_solicitud' solicitud.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="estado" value="accepted">
+                                <button type="submit" class="btn btn--primary" style="padding: 4px 10px; font-size: 13px;">Aceptar</button>
+                            </form>
+                            <form method="post" action="{% url 'comunicacion:actualizar_solicitud' solicitud.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="estado" value="rejected">
+                                <button type="submit" class="btn btn--ghost" style="padding: 4px 10px; font-size: 13px;">Rechazar</button>
+                            </form>
+                        </div>
+                        {% else %}
+                            <span style="color: var(--color-muted);">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="color: var(--color-muted); text-align: center; padding: 48px 24px;">No hay solicitudes.</p>
+    {% endif %}
+</div>
 {% endblock %}
