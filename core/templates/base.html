@@ -15,7 +15,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 
-<body class="app-shell">
+<body {% if request.user.is_authenticated and request.path != '/usuarios/login/' and request.path != '/accounts/login/' %}class="app-shell"{% endif %}>
 
 {% if request.user.is_authenticated and request.path != '/usuarios/login/' and request.path != '/accounts/login/' %}
 
@@ -24,6 +24,7 @@
 
     <nav>
         <ul class="sidebar-nav">
+            {% if request.user|has_group:'JefeProyecto' or request.user|has_group:'LiderCuadrilla' %}
             <li>
                 <a href="{% url 'dashboard' %}"
                    {% if request.path == '/' or request.path|slice:":10" == '/dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
@@ -36,6 +37,12 @@
                 <a href="{% url 'personal:crear_cuadrilla' %}"
                    {% if '/personal' in request.path %}aria-current="page"{% endif %}>Gestión de cuadrillas</a>
             </li>
+            {% elif request.user|has_group:'Trabajador' %}
+            <li>
+                <a href="{% url 'personal:mi_cuadrilla' %}"
+                   {% if '/personal/mi-cuadrilla' in request.path %}aria-current="page"{% endif %}>Mi Cuadrilla</a>
+            </li>
+            {% endif %}
         </ul>
     </nav>
 </aside>

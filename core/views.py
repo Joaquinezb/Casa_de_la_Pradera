@@ -15,6 +15,10 @@ def dashboard_redirect(request):
     is_lider = user.groups.filter(name='LiderCuadrilla').exists()
     is_trabajador = user.groups.filter(name='Trabajador').exists()
     
+    # Si es trabajador, redirigir a su vista de cuadrilla
+    if is_trabajador and not is_jefe and not is_lider:
+        return redirect('personal:mi_cuadrilla')
+    
     # KPIs generales
     proyectos_activos = Proyecto.objects.filter(activo=True).count()
     proyectos_finalizados = Proyecto.objects.filter(activo=False).count()

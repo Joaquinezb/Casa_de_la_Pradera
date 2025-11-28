@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/personal/cuadrillas.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h2>Mi Cuadrilla</h2>
+
+        {% if sin_cuadrilla %}
+        <div class="alert alert-info">
+            <p>Actualmente no estás asignado a ninguna cuadrilla.</p>
+            <p>Contacta a tu supervisor para más información.</p>
+        </div>
+        {% else %}
+        
+        <div class="mb-4">
+            <h3>{{ cuadrilla.nombre }}</h3>
+            {% if proyecto %}
+            <p><strong>Proyecto:</strong> {{ proyecto.nombre }}</p>
+            <p><strong>Descripción:</strong> {{ proyecto.descripcion|default:"Sin descripción" }}</p>
+            <p><strong>Tipo:</strong> {{ proyecto.get_tipo_display }}</p>
+            <p><strong>Complejidad:</strong> {{ proyecto.get_complejidad_display }}</p>
+            <p><strong>Fecha inicio:</strong> {{ proyecto.fecha_inicio }}</p>
+            {% if proyecto.fecha_termino %}
+            <p><strong>Fecha término:</strong> {{ proyecto.fecha_termino }}</p>
+            {% endif %}
+            <p><strong>Jefe de Proyecto:</strong> {{ proyecto.jefe.get_full_name|default:proyecto.jefe.username }}</p>
+            {% else %}
+            <p class="text-muted">Esta cuadrilla no está asignada a ningún proyecto actualmente.</p>
+            {% endif %}
+        </div>
+
+        <hr>
+
+        <h4>Miembros de la Cuadrilla</h4>
+        
+        {% if cuadrilla.lider %}
+        <p><strong>Líder:</strong> {{ cuadrilla.lider.get_full_name|default:cuadrilla.lider.username }}</p>
+        {% endif %}
+
+        <p><strong>Mi rol:</strong> {{ mi_rol.nombre|default:"Sin rol asignado" }}</p>
+
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Rol</th>
+                    <th>Especialidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in miembros %}
+                <tr {% if m.user == request.user %}class="table-info"{% endif %}>
+                    <td>
+                        {{ m.user.get_full_name|default:m.user.username }}
+                        {% if m.es_lider %}
+                        <span class="badge bg-primary">Líder</span>
+                        {% endif %}
+                        {% if m.user == request.user %}
+                        <span class="badge bg-info">Tú</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ m.rol.nombre|default:"—" }}</td>
+                    <td>{{ m.trabajador.especialidad|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

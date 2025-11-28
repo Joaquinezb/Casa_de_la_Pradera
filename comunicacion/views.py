@@ -14,7 +14,11 @@ def conversations_list(request):
     """Lista las conversaciones en las que participa el usuario y muestra
     las cuadrillas donde participa para iniciar conversaciones privadas.
     """
-    qs = Conversation.objects.filter(participants=request.user).select_related('cuadrilla')
+    # Filtrar solo conversaciones activas (no archivadas)
+    qs = Conversation.objects.filter(
+        participants=request.user,
+        archived=False
+    ).select_related('cuadrilla')
 
     from personal.models import Asignacion, Cuadrilla
 

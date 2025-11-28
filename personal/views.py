@@ -23,6 +23,9 @@ from .utils import (
     preparar_contexto_especialidades, preparar_contexto_certificaciones,
     obtener_disponibilidad_trabajador
 )
+from comunicacion.models import (
+    Conversation, Message, WorkerRequest, IncidentNotice
+)
 from comunicacion.models import archive_conversation
 
 
@@ -654,15 +657,19 @@ def disolver_cuadrilla(request, cuadrilla_id):
     # Archivar conversación antes de eliminar
     nombre_cuadrilla = cuad.nombre
     try:
-        conv = getattr(cuad, 'conversaciones').first()
-        if conv:
+        conversaciones = Conversation.objects.filter(cuadrilla=cuad)
+        for conv in conversaciones:
+            print(f"Archivando conversación {conv.id} de cuadrilla {nombre_cuadrilla}")
             archive_conversation(
                 conv,
                 archived_by=request.user,
                 reason=f"Disolución de cuadrilla '{nombre_cuadrilla}'"
             )
-    except Exception:
-        pass
+            print(f"Conversación {conv.id} archivada exitosamente")
+    except Exception as e:
+        print(f"Error archivando conversación: {e}")
+        import traceback
+        traceback.print_exc()
 
     # Capturar datos antes de eliminar
     asignaciones = list(Asignacion.objects.filter(cuadrilla=cuad))
@@ -852,6 +859,51 @@ def marcar_todas_leidas(request):
 
     request.user.notificaciones.filter(leida=False).update(leida=True)
     return redirect("personal:mis_notificaciones")
+
+
+# =====================================================
+# 8. MI CUADRILLA (VISTA TRABAJADOR)
+# =====================================================
+@login_required
+def mi_cuadrilla(request):
+    """
+    Vista para trabajadores: muestra solo su cuadrilla actual.
+    No permite ediciones, solo consulta.
+    """
+    user = request.user
+    
+    # Buscar asignación del trabajador
+    asignacion = Asignacion.objects.filter(trabajador=user).select_related('cuadrilla', 'cuadrilla__proyecto', 'rol').first()
+    
+    if not asignacion:
+        # Trabajador no tiene cuadrilla asignada
+        return render(request, 'personal/mi_cuadrilla.html', {
+            'sin_cuadrilla': True,
+        })
+    
+    cuadrilla = asignacion.cuadrilla
+    proyecto = cuadrilla.proyecto
+    
+    # Obtener todos los miembros de la cuadrilla
+    asignaciones = Asignacion.objects.filter(cuadrilla=cuadrilla).select_related('trabajador', 'rol').order_by('trabajador__username')
+    
+    miembros = []
+    for asig in asignaciones:
+        trabajador_obj = Trabajador.objects.filter(user=asig.trabajador).first()
+        miembros.append({
+            'user': asig.trabajador,
+            'rol': asig.rol,
+            'trabajador': trabajador_obj,
+            'es_lider': cuadrilla.lider == asig.trabajador,
+        })
+    
+    return render(request, 'personal/mi_cuadrilla.html', {
+        'cuadrilla': cuadrilla,
+        'proyecto': proyecto,
+        'miembros': miembros,
+        'mi_rol': asignacion.rol,
+        'sin_cuadrilla': False,
+    })
 
 
 # =====================================================
