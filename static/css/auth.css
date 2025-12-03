@@ -1,19 +1,566 @@
-/* Estilos de páginas de autenticación */
+/* ============================================
+   MODIFICACIÓN: Estilos de autenticación - Rediseño completo
+   ============================================
+   FECHA: Modificación actual
+   RAZÓN: Hacer la página de login más llamativa e interactiva
+   
+   ANTES: 
+   - Estilos básicos y simples
+   - Sin animaciones
+   - Sin efectos visuales especiales
+   
+   AHORA:
+   - Fondo con gradiente animado
+   - Efecto glassmorphism en tarjeta
+   - Animaciones y transiciones suaves
+   - Efectos hover y focus mejorados
+   - Diseño moderno y atractivo
+   ============================================ */
 
-/* Centrar contenido cuando no hay layout de app */
+/* ============================================
+   MODIFICACIÓN: Contenedor principal - NUEVO diseño
+   ============================================
+   NUEVO: Contenedor con fondo animado y centrado perfecto
+   ============================================ */
+/* ============================================
+   MODIFICACIÓN: Contenedor de login - Diseño más profesional
+   ============================================
+   FECHA: Modificación actual
+   RAZÓN: Hacer el login más profesional y corporativo
+   
+   CAMBIOS:
+   - Fondo más sutil y profesional
+   - Menos efectos llamativos
+   - Colores más corporativos
+   ============================================ */
+/* MODIFICACIÓN: Contenedor - Padding normal */
+.login-container {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+}
+
+/* ============================================
+   MODIFICACIÓN: Fondo animado con orbes - NUEVO efecto visual
+   ============================================
+   NUEVO: Orbes de gradiente animados que flotan en el fondo
+   ============================================ */
+.login-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.gradient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.6;
+    animation: float 20s infinite ease-in-out;
+}
+
+.orb-1 {
+    width: 400px;
+    height: 400px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    top: -200px;
+    left: -200px;
+    animation-delay: 0s;
+}
+
+.orb-2 {
+    width: 300px;
+    height: 300px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    bottom: -150px;
+    right: -150px;
+    animation-delay: 5s;
+}
+
+.orb-3 {
+    width: 250px;
+    height: 250px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    top: 50%;
+    right: 10%;
+    animation-delay: 10s;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+    }
+    33% {
+        transform: translate(30px, -30px) scale(1.1);
+    }
+    66% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+}
+
+/* ============================================
+   MODIFICACIÓN: Tarjeta de login - Diseño glassmorphism - NUEVO
+   ============================================
+   NUEVO: Tarjeta con efecto de vidrio esmerilado, sombras y animaciones
+   ============================================ */
+/* ============================================
+   MODIFICACIÓN: Tarjeta de login - Diseño más profesional
+   ============================================
+   CAMBIOS:
+   - Eliminado glassmorphism (backdrop-filter)
+   - Fondo sólido blanco
+   - Sombras más sutiles y profesionales
+   - Bordes más limpios
+   ============================================ */
+/* ============================================
+   MODIFICACIÓN: Tarjeta de login - Mucho más ancha
+   ============================================
+   CAMBIOS:
+   - max-width: de 900px a 95% del viewport (muy ancho, casi hasta los bordes)
+   - padding vertical: 60px (mantener altura)
+   - padding horizontal: 80px (más ancho)
+   ============================================ */
+/* ============================================
+   MODIFICACIÓN: Tarjeta de login - MUCHO más ancha
+   ============================================
+   CAMBIOS:
+   - max-width: 95% del viewport (casi hasta los bordes)
+   - width: 100% para que use todo el espacio disponible
+   ============================================ */
+/* ============================================
+   MODIFICACIÓN: Tarjeta de login - Más ancho
+   ============================================
+   CAMBIOS:
+   - max-width: 750px (más ancho)
+   - width: 100% (se adapta al contenedor)
+   - padding: 60px 80px (más espacio horizontal)
+   ============================================ */
+/* ============================================
+   MODIFICACIÓN: Tarjeta de login - MUCHO más ancho
+   ============================================
+   CAMBIOS:
+   - max-width: 1200px (MUCHO más ancho)
+   - width: 90% (ocupa 90% del ancho disponible)
+   - min-width: 1000px (ancho mínimo garantizado)
+   - padding: 60px 100px (más espacio horizontal)
+   ============================================ */
+.login-card {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px !important;
+    width: 90% !important;
+    min-width: 1000px !important;
+    background: #ffffff;
+    border-radius: 28px;
+    padding: 60px 100px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12),
+                0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(78, 205, 196, 0.15);
+}
+
+/* MODIFICACIÓN: Header de login - Menos margen vertical */
+.login-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+/* MODIFICACIÓN: Icono - Mantener tamaño pero menos margen */
+.login-icon-wrapper {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 28px;
+    background: #4ecdc4;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(78, 205, 196, 0.25);
+    border: 2px solid rgba(78, 205, 196, 0.2);
+}
+
+@keyframes iconPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+    }
+}
+
+.login-icon {
+    color: white;
+    width: 64px;
+    height: 64px;
+}
+
+/* MODIFICACIÓN: Título aún más grande */
+.login-title {
+    font-size: 44px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0 0 16px 0;
+}
+
+.login-subtitle {
+    font-size: 20px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* ============================================
+   MODIFICACIÓN: Formulario - Menos espacio vertical, más ancho
+   ============================================
+   CAMBIOS:
+   - gap: de 40px a 32px (menos espacio vertical)
+   - gap en form-group: de 16px a 12px (menos espacio vertical)
+   ============================================ */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* MODIFICACIÓN: Labels aún más grandes */
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* MODIFICACIÓN: Iconos de labels más grandes */
+.label-icon {
+    color: var(--primary);
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+}
+
+/* ============================================
+   MODIFICACIÓN: Inputs con efectos mejorados - NUEVO diseño
+   ============================================
+   NUEVO: Inputs con wrapper, línea de focus animada y efectos visuales
+   ============================================ */
+.input-wrapper {
+    position: relative;
+}
+
+/* MODIFICACIÓN: Inputs aún más grandes */
+.form-input {
+    width: 100%;
+    padding: 24px 28px;
+    font-size: 20px;
+    border: 2px solid var(--border-light);
+    border-radius: 16px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.form-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.form-input:hover {
+    border-color: var(--primary-light);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+.input-wrapper.focused .form-input {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1),
+                0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+/* MODIFICACIÓN: Línea de focus animada - NUEVO efecto */
+.input-focus-line {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.input-wrapper.focused .input-focus-line {
+    transform: scaleX(1);
+}
+
+/* MODIFICACIÓN: Toggle de contraseña - NUEVO */
+.password-toggle {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+    z-index: 1;
+}
+
+.password-toggle:hover {
+    color: var(--primary);
+}
+
+.eye-icon {
+    width: 20px;
+    height: 20px;
+}
+
+/* ============================================
+   MODIFICACIÓN: Alerta de error - NUEVO diseño
+   ============================================
+   NUEVO: Alerta con icono, mejor diseño visual y animación
+   ============================================ */
+.alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.alert-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.alert-icon {
+    flex-shrink: 0;
+}
+
+/* ============================================
+   MODIFICACIÓN: Botón de login - NUEVO diseño
+   ============================================
+   NUEVO: Botón con gradiente, efectos hover y animación de carga
+   ============================================ */
+/* ============================================
+   MODIFICACIÓN: Botón de login - Color sólido y diseño profesional
+   ============================================
+   CAMBIOS:
+   - Color sólido turquesa (#4ecdc4) - sin gradiente
+   - Tamaño mediano
+   - Sombras más sutiles
+   ============================================ */
+/* MODIFICACIÓN: Botón aún más grande */
+.btn-login {
+    position: relative;
+    width: 100%;
+    padding: 22px 32px;
+    font-size: 19px;
+    font-weight: 600;
+    color: white;
+    background: #4ecdc4;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
+    margin-top: 12px;
+}
+
+.btn-login::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-login:hover::before {
+    left: 100%;
+}
+
+/* MODIFICACIÓN: Hover más profesional */
+.btn-login:hover {
+    background: #3db8ad;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
+}
+
+.btn-login:active {
+    transform: translateY(0);
+}
+
+.btn-login.loading {
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.btn-text {
+    transition: opacity 0.3s ease;
+}
+
+.btn-icon {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.btn-login:hover .btn-icon {
+    transform: translateX(4px);
+}
+
+/* MODIFICACIÓN: Loader del botón - NUEVO */
+.btn-loader {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ============================================
+   MODIFICACIÓN: Botón volver - NUEVO diseño
+   ============================================
+   NUEVO: Botón con mejor diseño y efectos hover
+   ============================================ */
+.btn-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    margin-top: 8px;
+}
+
+.btn-back:hover {
+    background: var(--bg-secondary);
+    color: var(--primary);
+    transform: translateX(-4px);
+}
+
+.btn-back svg {
+    transition: transform 0.3s ease;
+}
+
+.btn-back:hover svg {
+    transform: translateX(-4px);
+}
+
+/* ============================================
+   MODIFICACIÓN: Responsive design - NUEVO
+   ============================================
+   NUEVO: Ajustes para dispositivos móviles
+   ============================================ */
+@media (max-width: 768px) {
+    .login-card {
+        max-width: 90vw;
+        width: 90vw;
+        padding: 32px 24px;
+        border-radius: 20px;
+    }
+    
+    .login-title {
+        font-size: 28px;
+    }
+    
+    .login-icon-wrapper {
+        width: 64px;
+        height: 64px;
+    }
+    
+    .login-icon {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .orb-1, .orb-2, .orb-3 {
+        filter: blur(60px);
+    }
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        padding: 16px;
+    }
+    
+    .login-card {
+        max-width: 90vw;
+        width: 90vw;
+        padding: 24px 20px;
+    }
+}
+
+/* ============================================
+   MODIFICACIÓN: Centrado cuando no hay layout de app
+   ============================================
+   MANTENIDO: Estilos originales para compatibilidad
+   ============================================ */
 body:not(.app-shell) .app-content,
 .app-content:only-child {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 32px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 32px 16px;
 }
 
+/* MODIFICACIÓN: Clase auth-card mantenida para compatibilidad */
 .auth-card { 
-  max-width: 420px; 
-  width: 100%;
-  margin: 0 auto;
+    max-width: 420px; 
+    width: 100%;
+    margin: 0 auto;
 }
 
-.auth-error { margin-bottom: 12px; }
+.auth-error { 
+    margin-bottom: 12px; 
+}

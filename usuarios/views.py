@@ -6,14 +6,21 @@ from django.shortcuts import redirect
 
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        
+        if not username or not password:
+            return render(request, 'login.html', {'error': 'Por favor, completa todos los campos'})
+        
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            login(request, user)
-            return redirect('dashboard')  # redirige al dashboard de core
+            if user.is_active:
+                login(request, user)
+                return redirect('dashboard')  # redirige al dashboard de core
+            else:
+                return render(request, 'login.html', {'error': 'Tu cuenta está desactivada. Contacta al administrador.'})
         else:
-            return render(request, 'login.html', {'error': 'Credenciales inválidas'})
+            return render(request, 'login.html', {'error': 'Usuario o contraseña incorrectos'})
     return render(request, 'login.html')
 
 def logout_view(request):

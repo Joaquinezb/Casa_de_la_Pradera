@@ -4,106 +4,393 @@
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 {% endblock %}
 
+{# ============================================
+   MODIFICACIÓN: Dashboard completamente rediseñado
+   ============================================
+   CAMBIOS REALIZADOS:
+   1. Diseño visual moderno con iconos SVG
+   2. Tarjetas de métricas con gradientes y animaciones
+   3. Estructura HTML mejorada con mejor semántica
+   4. Agregado de efectos hover e interactividad
+   5. Responsive design mejorado
+   6. Animaciones de contadores con JavaScript
+   ============================================ #}
+
 {% block content %}
-<div style="margin-bottom: 24px;">
-    <h2 style="margin-bottom: 8px;">Dashboard</h2>
-    <p style="color: var(--color-muted);">Vista general del sistema</p>
+<div class="dashboard-header">
+    <div>
+        <h1 class="dashboard-title">Dashboard</h1>
+        <p class="dashboard-subtitle">Vista general del sistema</p>
+    </div>
+    <div class="dashboard-actions">
+        {% if is_jefe %}
+        <a href="{% url 'proyectos:nuevo' %}" class="btn btn--primary btn-icon">
+            <span class="icon">+</span>
+            Nuevo Proyecto
+        </a>
+        {% endif %}
+    </div>
 </div>
 
-<!-- Métricas principales (KPIs) -->
+<!-- ============================================
+     MODIFICACIÓN: Métricas principales (KPIs) - Rediseño completo
+     ============================================
+     ANTES: Tarjetas simples con números estáticos
+     AHORA: Tarjetas interactivas con:
+     - Iconos SVG personalizados
+     - Animaciones de entrada (data-animate)
+     - Contadores animados (data-count)
+     - Indicadores de tendencia
+     - Efectos hover mejorados
+     ============================================ -->
 <div class="dashboard-metrics">
-    <div class="card-kpi">
-        <div class="heading">Proyectos Activos</div>
-        <div class="number">{{ proyectos_activos }}</div>
+    <div class="metric-card metric-card--primary" data-animate>
+        <div class="metric-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+            </svg>
+        </div>
+        <div class="metric-content">
+            <div class="metric-label">Proyectos Activos</div>
+            <div class="metric-value" data-count="{{ proyectos_activos }}">0</div>
+            <div class="metric-trend">
+                <span class="trend-indicator trend-up"></span>
+                <span class="trend-text">En ejecución</span>
+            </div>
+        </div>
     </div>
-    <div class="card-kpi">
-        <div class="heading">Proyectos Finalizados</div>
-        <div class="number">{{ proyectos_finalizados }}</div>
+
+    <div class="metric-card metric-card--success" data-animate>
+        <div class="metric-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </div>
+        <div class="metric-content">
+            <div class="metric-label">Proyectos Finalizados</div>
+            <div class="metric-value" data-count="{{ proyectos_finalizados }}">0</div>
+            <div class="metric-trend">
+                <span class="trend-indicator trend-success"></span>
+                <span class="trend-text">Completados</span>
+            </div>
+        </div>
     </div>
-    <div class="card-kpi">
-        <div class="heading">Cuadrillas Activas</div>
-        <div class="number">{{ cuadrillas_activas }}</div>
+
+    <div class="metric-card metric-card--info" data-animate>
+        <div class="metric-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 010 7.75"></path>
+            </svg>
+        </div>
+        <div class="metric-content">
+            <div class="metric-label">Cuadrillas Activas</div>
+            <div class="metric-value" data-count="{{ cuadrillas_activas }}">0</div>
+            <div class="metric-trend">
+                <span class="trend-indicator trend-info"></span>
+                <span class="trend-text">Operativas</span>
+            </div>
+        </div>
     </div>
-    <div class="card-kpi">
-        <div class="heading">Trabajadores Disponibles</div>
-        <div class="number">{{ trabajadores_disponibles }}/{{ total_trabajadores }}</div>
+
+    <div class="metric-card metric-card--warning" data-animate>
+        <div class="metric-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        </div>
+        <div class="metric-content">
+            <div class="metric-label">Trabajadores Disponibles</div>
+            <div class="metric-value">
+                <span data-count="{{ trabajadores_disponibles }}">0</span>
+                <span class="metric-divider">/</span>
+                <span class="metric-total">{{ total_trabajadores }}</span>
+            </div>
+            <div class="metric-trend">
+                <span class="trend-indicator trend-warning"></span>
+                <span class="trend-text">Listos para asignar</span>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Grid de información -->
-<div class="grid grid--cols-2" style="margin-top: 24px;">
-    <!-- Proyectos recientes -->
-    <div class="card">
-        <div class="card-title">Proyectos Recientes</div>
+<!-- ============================================
+     MODIFICACIÓN: Grid de información - Rediseño completo
+     ============================================
+     ANTES: Listas simples con estilos inline
+     AHORA: 
+     - Tarjetas con estructura mejorada
+     - Iconos SVG para cada item
+     - Efectos hover interactivos
+     - Badges para contadores
+     - Estados vacíos con iconos
+     ============================================ -->
+<div class="dashboard-grid">
+    <!-- MODIFICACIÓN: Proyectos recientes - Nueva estructura visual -->
+    <div class="dashboard-card card-projects" data-animate>
+        <div class="card-header">
+            <div class="card-title-group">
+                <h3 class="card-title">Proyectos Recientes</h3>
+                <span class="card-badge">{{ proyectos_recientes|length }}</span>
+            </div>
+            <a href="{% url 'proyectos:panel' %}" class="card-link">Ver todos →</a>
+        </div>
+        
         {% if proyectos_recientes %}
-        <ul style="list-style: none; padding: 0; margin: 0;">
+        <div class="card-list">
             {% for proyecto in proyectos_recientes %}
-            <li style="padding: 12px 0; border-bottom: 1px solid var(--color-border);">
-                <strong>{{ proyecto.nombre }}</strong>
-                <div style="font-size: 13px; color: var(--color-muted); margin-top: 4px;">
-                    Jefe: {{ proyecto.jefe.get_full_name|default:proyecto.jefe.username }}
-                    | Inicio: {{ proyecto.fecha_inicio }}
+            <div class="card-item" data-hover>
+                <div class="item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                    </svg>
                 </div>
-                <div style="margin-top: 8px;">
-                    <a href="{% url 'proyectos:panel' %}" class="btn btn--ghost" style="padding: 4px 10px; font-size: 13px;">Ver detalles</a>
+                <div class="item-content">
+                    <div class="item-title">{{ proyecto.nombre }}</div>
+                    <div class="item-meta">
+                        <span class="meta-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            {{ proyecto.jefe.get_full_name|default:proyecto.jefe.username }}
+                        </span>
+                        <span class="meta-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            {{ proyecto.fecha_inicio }}
+                        </span>
+                    </div>
                 </div>
-            </li>
+                <a href="{% url 'proyectos:panel' %}" class="item-action">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </a>
+            </div>
             {% endfor %}
-        </ul>
+        </div>
         {% else %}
-        <p style="color: var(--color-muted);">No hay proyectos activos recientes.</p>
+        <div class="card-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            </svg>
+            <p>No hay proyectos activos recientes</p>
+        </div>
         {% endif %}
         
         {% if is_jefe %}
-        <div style="margin-top: 16px;">
-            <a href="{% url 'proyectos:nuevo' %}" class="btn btn--primary">+ Nuevo Proyecto</a>
+        <div class="card-footer">
+            <a href="{% url 'proyectos:nuevo' %}" class="btn btn--primary btn-block">
+                <span class="icon">+</span>
+                Nuevo Proyecto
+            </a>
         </div>
         {% endif %}
     </div>
 
-    <!-- Cuadrillas sin asignar -->
-    <div class="card">
-        <div class="card-title">Cuadrillas Sin Proyecto</div>
-        <div class="card-subtitle">{{ cuadrillas_sin_proyecto }} cuadrilla(s) disponible(s)</div>
+    <!-- MODIFICACIÓN: Cuadrillas sin asignar - Nueva estructura visual -->
+    <div class="dashboard-card card-squads" data-animate>
+        <div class="card-header">
+            <div class="card-title-group">
+                <h3 class="card-title">Cuadrillas Sin Proyecto</h3>
+                <span class="card-badge badge-warning">{{ cuadrillas_sin_proyecto }}</span>
+            </div>
+        </div>
+        
         {% if cuadrillas_disponibles %}
-        <ul style="list-style: none; padding: 0; margin: 0;">
+        <div class="card-list">
             {% for cuadrilla in cuadrillas_disponibles %}
-            <li style="padding: 12px 0; border-bottom: 1px solid var(--color-border);">
-                <strong>{{ cuadrilla.nombre }}</strong>
-                <div style="font-size: 13px; color: var(--color-muted); margin-top: 4px;">
-                    Líder: {{ cuadrilla.lider.username|default:"Sin líder" }}
-                    | Trabajadores: {{ cuadrilla.asignaciones.count }}
+            <div class="card-item" data-hover>
+                <div class="item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 010 7.75"></path>
+                    </svg>
                 </div>
-                <div style="margin-top: 8px;">
-                    <a href="{% url 'personal:detalle_cuadrilla' cuadrilla.id %}" class="btn btn--ghost" style="padding: 4px 10px; font-size: 13px;">Ver cuadrilla</a>
+                <div class="item-content">
+                    <div class="item-title">{{ cuadrilla.nombre }}</div>
+                    <div class="item-meta">
+                        <span class="meta-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            {{ cuadrilla.lider.username|default:"Sin líder" }}
+                        </span>
+                        <span class="meta-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                            </svg>
+                            {{ cuadrilla.asignaciones.count }} trabajador{{ cuadrilla.asignaciones.count|pluralize:"es" }}
+                        </span>
+                    </div>
                 </div>
-            </li>
+                <a href="{% url 'personal:detalle_cuadrilla' cuadrilla.id %}" class="item-action">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </a>
+            </div>
             {% endfor %}
-        </ul>
+        </div>
         {% else %}
-        <p style="color: var(--color-muted);">Todas las cuadrillas están asignadas a proyectos.</p>
+        <div class="card-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 010 7.75"></path>
+            </svg>
+            <p>Todas las cuadrillas están asignadas</p>
+        </div>
         {% endif %}
         
         {% if is_jefe %}
-        <div style="margin-top: 16px;">
-            <a href="{% url 'personal:crear_cuadrilla' %}" class="btn btn--primary">+ Nueva Cuadrilla</a>
+        <div class="card-footer">
+            <a href="{% url 'personal:crear_cuadrilla' %}" class="btn btn--primary btn-block">
+                <span class="icon">+</span>
+                Nueva Cuadrilla
+            </a>
         </div>
         {% endif %}
     </div>
 </div>
 
-<!-- Accesos rápidos -->
-<div class="card" style="margin-top: 24px;">
-    <div class="card-title">Accesos Rápidos</div>
-    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-        <a href="{% url 'proyectos:panel' %}" class="btn btn--ghost">Ver Todos los Proyectos</a>
-        <a href="{% url 'comunicacion:conversations_list' %}" class="btn btn--ghost">Conversaciones</a>
-        <a href="{% url 'personal:mis_notificaciones' %}" class="btn btn--ghost">Notificaciones</a>
+<!-- ============================================
+     MODIFICACIÓN: Accesos rápidos - Nuevo diseño
+     ============================================
+     NUEVO: Grid de accesos rápidos con:
+     - Iconos grandes y visibles
+     - Efectos hover con cambio de color
+     - Transformaciones al pasar el mouse
+     - Diseño más intuitivo y atractivo
+     ============================================ -->
+<div class="dashboard-card card-quick-access" data-animate>
+    <div class="card-header">
+        <h3 class="card-title">Accesos Rápidos</h3>
+    </div>
+    <div class="quick-access-grid">
+        <a href="{% url 'proyectos:panel' %}" class="quick-access-item" data-hover>
+            <div class="quick-access-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                </svg>
+            </div>
+            <span>Proyectos</span>
+        </a>
+        <a href="{% url 'comunicacion:conversations_list' %}" class="quick-access-item" data-hover>
+            <div class="quick-access-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
+                </svg>
+            </div>
+            <span>Conversaciones</span>
+        </a>
+        <a href="{% url 'personal:mis_notificaciones' %}" class="quick-access-item" data-hover>
+            <div class="quick-access-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 01-3.46 0"></path>
+                </svg>
+            </div>
+            <span>Notificaciones</span>
+        </a>
         {% if is_jefe %}
-        <a href="{% url 'proyectos:nuevo' %}" class="btn btn--primary">+ Nuevo Proyecto</a>
-        <a href="{% url 'personal:crear_cuadrilla' %}" class="btn btn--primary">+ Nueva Cuadrilla</a>
+        <a href="{% url 'personal:crear_cuadrilla' %}" class="quick-access-item" data-hover>
+            <div class="quick-access-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 010 7.75"></path>
+                </svg>
+            </div>
+            <span>Cuadrillas</span>
+        </a>
         {% endif %}
     </div>
 </div>
 
+{% endblock %}
+
+{# ============================================
+   MODIFICACIÓN: JavaScript para animaciones interactivas
+   ============================================
+   NUEVO: Agregado JavaScript para:
+   1. Animación de contadores numéricos (incremento desde 0)
+   2. Animaciones de entrada escalonadas para tarjetas
+   3. Observador de intersección para activar animaciones cuando son visibles
+   ============================================ #}
+{% block extra_js %}
+<script>
+// Animación de contadores - NUEVO: Incrementa desde 0 hasta el valor real
+document.addEventListener('DOMContentLoaded', function() {
+    // ============================================
+    // MODIFICACIÓN: Animación de contadores numéricos
+    // ============================================
+    // NUEVO: Sistema de animación que incrementa los números desde 0
+    // hasta el valor real, creando un efecto visual atractivo
+    // ============================================
+    const counters = document.querySelectorAll('.metric-value[data-count]');
+    
+    counters.forEach(counter => {
+        const target = parseInt(counter.getAttribute('data-count'));
+        const duration = 1500; // Duración de la animación en ms
+        const increment = target / (duration / 16); // Incremento por frame
+        let current = 0;
+        
+        const updateCounter = () => {
+            current += increment;
+            if (current < target) {
+                counter.textContent = Math.floor(current);
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.textContent = target;
+            }
+        };
+        
+        // MODIFICACIÓN: Observador de intersección - NUEVO
+        // Inicia la animación solo cuando el elemento es visible en pantalla
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    updateCounter();
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        observer.observe(counter);
+    });
+    
+    // ============================================
+    // MODIFICACIÓN: Animación de entrada para tarjetas
+    // ============================================
+    // NUEVO: Efecto de entrada escalonado (stagger) para las tarjetas
+    // Cada tarjeta aparece con un pequeño delay para crear un efecto visual
+    // ============================================
+    const animatedCards = document.querySelectorAll('[data-animate]');
+    animatedCards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100); // Delay escalonado: 0ms, 100ms, 200ms, etc.
+    });
+});
+</script>
 {% endblock %}

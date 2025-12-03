@@ -25,10 +25,41 @@ def dashboard_redirect(request):
     cuadrillas_activas = Cuadrilla.objects.exclude(proyecto__isnull=True).count()
     cuadrillas_sin_proyecto = Cuadrilla.objects.filter(proyecto__isnull=True).count()
     
-    # Total de trabajadores
-    total_trabajadores = User.objects.filter(groups__name='Trabajador').count()
-    trabajadores_asignados = Asignacion.objects.values('trabajador').distinct().count()
-    trabajadores_disponibles = total_trabajadores - trabajadores_asignados
+    # ============================================
+    # MODIFICACIÓN: Corrección del cálculo de trabajadores disponibles
+    # ============================================
+    # PROBLEMA ORIGINAL: El cálculo anterior usaba User.objects.filter(groups__name='Trabajador')
+    # y Asignacion.objects.values('trabajador').distinct(), lo que causaba que el resultado
+    # fuera negativo (-1) cuando había más asignaciones que usuarios en el grupo.
+    #
+    # SOLUCIÓN: Ahora usamos el modelo Trabajador directamente para un cálculo más preciso:
+    # 1. Contamos solo trabajadores activos del tipo 'trabajador'
+    # 2. Filtramos por estado 'disponible'
+    # 3. Excluimos trabajadores asignados a proyectos activos
+    # 4. Garantizamos que el resultado nunca sea negativo
+    # ============================================
+    
+    # Total de trabajadores - usar modelo Trabajador directamente
+    total_trabajadores = Trabajador.objects.filter(activo=True, tipo_trabajador='trabajador').count()
+    
+    # Trabajadores asignados a cuadrillas con proyecto activo
+    trabajadores_asignados_ids = Asignacion.objects.filter(
+        cuadrilla__proyecto__isnull=False,
+        cuadrilla__proyecto__activo=True
+    ).values_list('trabajador_id', flat=True).distinct()
+    
+    # Trabajadores disponibles: activos, tipo trabajador, estado disponible, y no asignados
+    trabajadores_disponibles = Trabajador.objects.filter(
+        activo=True,
+        tipo_trabajador='trabajador',
+        estado='disponible'
+    ).exclude(
+        user_id__in=trabajadores_asignados_ids
+    ).count()
+    
+    # Asegurar que no sea negativo (protección adicional)
+    if trabajadores_disponibles < 0:
+        trabajadores_disponibles = 0
     
     # Proyectos recientes (últimos 5 activos)
     proyectos_recientes = Proyecto.objects.filter(activo=True).order_by('-created_at')[:5]
@@ -45,7 +76,6 @@ def dashboard_redirect(request):
         'cuadrillas_activas': cuadrillas_activas,
         'cuadrillas_sin_proyecto': cuadrillas_sin_proyecto,
         'total_trabajadores': total_trabajadores,
-        'trabajadores_asignados': trabajadores_asignados,
         'trabajadores_disponibles': trabajadores_disponibles,
         'proyectos_recientes': proyectos_recientes,
         'cuadrillas_disponibles': cuadrillas_disponibles,
