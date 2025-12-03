@@ -13,6 +13,17 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+        min-width: 240px;
+}
+@media (max-width: 992px) {
+    .btn-asignar-cuadrillas { min-width: 200px; }
+}
+@media (max-width: 768px) {
+    .btn-asignar-cuadrillas {
+        width: 100%;
+        min-width: 0;
+        display: flex;
+    }
 }
 </style>
 <h2>Panel de Gestión de Proyectos</h2>
@@ -101,7 +112,7 @@
 
         {% if item.can_assign %}
           <a href="{% url 'proyectos:asignar_cuadrillas' item.proyecto.id %}"
-              class="btn btn-sm btn-outline-primary mt-2 btn-asignar-cuadrillas">Asignar / Editar Cuadrillas</a>
+              class="btn btn-sm btn-outline-primary mt-2 btn-asignar-cuadrillas">Asignar Cuadrillas</a>
         {% endif %}
 
         {% if is_lider_view %}

@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
 {% load custom_tags %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/personal.css' %}">
+{% endblock %}
 {% block content %}
 
 <div class="container-fluid mt-4">
@@ -25,11 +28,11 @@
                             <div class="d-flex align-items-center mb-2">
                                 <i class="bi bi-briefcase me-2 text-primary"></i>
                                 <strong>Proyecto:</strong>
-                                <span class="ms-2">
+                                <span class="ms-2 info-strong">
                                     {% if cuadrilla.proyecto %}
-                                        <span class="badge bg-success">{{ cuadrilla.proyecto.nombre }}</span>
+                                        {{ cuadrilla.proyecto.nombre }}
                                     {% else %}
-                                        <span class="badge bg-secondary">Sin proyecto asignado</span>
+                                        <span class="info-muted">Sin proyecto asignado</span>
                                     {% endif %}
                                 </span>
                             </div>
@@ -38,11 +41,11 @@
                             <div class="d-flex align-items-center mb-2">
                                 <i class="bi bi-person-badge me-2 text-primary"></i>
                                 <strong>Líder:</strong>
-                                <span class="ms-2">
+                                <span class="ms-2 info-strong">
                                     {% if cuadrilla.lider %}
-                                        <span class="badge bg-info">{{ cuadrilla.lider.username }}</span>
+                                        {{ cuadrilla.lider.get_full_name|default:cuadrilla.lider.username }}
                                     {% else %}
-                                        <span class="badge bg-secondary">Sin líder asignado</span>
+                                        <span class="info-muted">Sin líder asignado</span>
                                     {% endif %}
                                 </span>
                             </div>

@@ -1,0 +1,11 @@
+/* Estilos específicos para vistas de Personal (minimalista y profesional) */
+
+.info-strong {
+  font-size: 1.06rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.info-muted {
+  color: var(--text-secondary);
+}
