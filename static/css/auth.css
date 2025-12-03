@@ -1,19 +1,25 @@
 /* Estilos de páginas de autenticación */
 
-/* Centrar contenido cuando no hay layout de app */
-body:not(.app-shell) .app-content,
-.app-content:only-child {
+/* Sobrescribir app-shell para páginas públicas */
+body.public-page {
+  display: block !important;
+}
+
+/* Centrar contenido en páginas de autenticación */
+body.public-page .app-content {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: 32px 16px;
+  padding: 0;
 }
 
-.auth-card { 
-  max-width: 420px; 
-  width: 100%;
-  margin: 0 auto;
+.auth-card {
+  max-width: 500px;
+  width: 90%;
+  margin: 0;
 }
 
-.auth-error { margin-bottom: 12px; }
+.auth-error {
+  margin-bottom: 1rem;
+}
