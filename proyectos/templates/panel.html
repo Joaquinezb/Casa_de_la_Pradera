@@ -4,6 +4,17 @@
 <link rel="stylesheet" href="{% static 'css/proyectos/proyectos.css' %}">
 {% endblock %}
 {% block content %}
+<style>
+.btn-asignar-cuadrillas {
+    height: 39px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+</style>
 <h2>Panel de Gestión de Proyectos</h2>
 
 {% if is_jefe_view %}
@@ -89,7 +100,8 @@
         {% endif %}
 
         {% if item.can_assign %}
-        <a href="{% url 'proyectos:asignar_cuadrillas' item.proyecto.id %}" class="btn btn-sm btn-outline-primary mt-2">Asignar / Editar Cuadrillas</a>
+          <a href="{% url 'proyectos:asignar_cuadrillas' item.proyecto.id %}"
+              class="btn btn-sm btn-outline-primary mt-2 btn-asignar-cuadrillas">Asignar / Editar Cuadrillas</a>
         {% endif %}
 
         {% if item.proyecto.activo %}

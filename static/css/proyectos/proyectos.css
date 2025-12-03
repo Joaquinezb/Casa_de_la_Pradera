@@ -13,3 +13,26 @@
 .card ul li { color: var(--color-text); }
 .card ul li strong { color: var(--color-text); font-weight: 600; }
 .card .small { color: var(--color-muted); }
+
+/* Botón Asignar/Editar Cuadrillas con tamaño fijo */
+.btn-asignar-cuadrillas {
+	/* Tamaño fijo */
+	width: 393.33px !important;
+	min-width: 393.33px !important;
+	height: 39px !important;
+	line-height: 39px !important;
+	box-sizing: border-box;
+
+	/* Evitar estiramiento en contenedores flex */
+	flex: 0 0 393.33px !important;
+	align-self: flex-start !important; /* no estirar a la altura del contenedor */
+
+	/* Centrados y control de texto */
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 12px !important; /* evitar que el padding aumente la altura */
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
