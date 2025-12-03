@@ -38,3 +38,16 @@ class ProyectoForm(forms.ModelForm):
             ),
             Submit('submit', 'Guardar Proyecto', css_class='btn btn-success mt-3')
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        fecha_inicio = cleaned_data.get('fecha_inicio')
+        fecha_termino = cleaned_data.get('fecha_termino')
+
+        if fecha_inicio and fecha_termino:
+            if fecha_termino < fecha_inicio:
+                raise forms.ValidationError(
+                    'La fecha de término no puede ser anterior a la fecha de inicio.'
+                )
+
+        return cleaned_data
