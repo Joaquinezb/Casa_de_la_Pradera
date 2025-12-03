@@ -2,155 +2,254 @@
 {% load custom_tags %}
 {% block content %}
 
-<h2>Detalle de Cuadrilla: {{ cuadrilla.nombre }}</h2>
+<div class="container-fluid mt-4">
+    <!-- Header de la cuadrilla -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="mb-0">
+                            <i class="bi bi-people-fill"></i> {{ cuadrilla.nombre }}
+                        </h2>
+                        <div>
+                            <a href="{% url 'personal:editar_cuadrilla' cuadrilla.id %}" class="btn btn-light btn-sm">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-briefcase me-2 text-primary"></i>
+                                <strong>Proyecto:</strong>
+                                <span class="ms-2">
+                                    {% if cuadrilla.proyecto %}
+                                        <span class="badge bg-success">{{ cuadrilla.proyecto.nombre }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Sin proyecto asignado</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-person-badge me-2 text-primary"></i>
+                                <strong>Líder:</strong>
+                                <span class="ms-2">
+                                    {% if cuadrilla.lider %}
+                                        <span class="badge bg-info">{{ cuadrilla.lider.username }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Sin líder asignado</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<p><strong>Proyecto:</strong>
-    {% if cuadrilla.proyecto %}
-        {{ cuadrilla.proyecto.nombre }}
-    {% else %}
-        <em>Sin proyecto asignado</em>
-    {% endif %}
-</p>
-
-<p><strong>Líder:</strong>
-    {% if cuadrilla.lider %}
-        {{ cuadrilla.lider.username }}
-    {% else %}
-        <em>Sin líder asignado</em>
-    {% endif %}
-</p>
-
-<hr>
-
-<h3>Trabajadores asignados</h3>
+    <!-- Tabla de trabajadores -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h3 class="mb-0"><i class="bi bi-people"></i> Trabajadores Asignados</h3>
+                </div>
+                <div class="card-body p-0">
 
 {% if trabajadores_detalle %}
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Trabajador</th>
-            <th>Rol Operativo</th>
-            <th>Disponibilidad</th>
-            <th>Especialidad</th>
-            <th>Competencias</th>
-            <th>Certificaciones</th>
-            <th>Experiencia</th>
-            <th>Estado</th>
-            <th>Ficha</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for t in trabajadores_detalle %}
-        <tr>
-            <td>{{ t.user.first_name }} {{ t.user.last_name }} ({{ t.user.username }})</td>
-            <td>
-                {% if t.rol %}
-                    {{ t.rol.nombre }}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="min-width: 150px;"><i class="bi bi-person"></i> Trabajador</th>
+                                    <th style="min-width: 120px;"><i class="bi bi-gear"></i> Rol Operativo</th>
+                                    <th style="min-width: 130px;"><i class="bi bi-check-circle"></i> Disponibilidad</th>
+                                    <th style="min-width: 120px;"><i class="bi bi-tools"></i> Especialidad</th>
+                                    <th style="min-width: 150px;"><i class="bi bi-star"></i> Competencias</th>
+                                    <th style="min-width: 150px;"><i class="bi bi-award"></i> Certificaciones</th>
+                                    <th style="min-width: 180px;"><i class="bi bi-briefcase"></i> Experiencia</th>
+                                    <th style="min-width: 120px;" class="text-center"><i class="bi bi-pencil-square"></i> Estado</th>
+                                    <th style="min-width: 110px;" class="text-center"><i class="bi bi-file-text"></i> Ficha</th>
+                                    {% if can_manage %}
+                                    <th style="min-width: 220px;" class="text-center"><i class="bi bi-arrow-left-right"></i> Mover a</th>
+                                    <th style="min-width: 110px;" class="text-center"><i class="bi bi-trash"></i> Acción</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for t in trabajadores_detalle %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ t.user.first_name }} {{ t.user.last_name }}</strong><br>
+                                        <small class="text-muted">({{ t.user.username }})</small>
+                                    </td>
+                                    <td>
+                                        {% if t.rol %}
+                                            <span class="badge bg-primary">{{ t.rol.nombre }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Sin rol</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if t.disponibilidad == 'disponible' %}
+                                            <span class="badge bg-success">{{ t.disponibilidad }}</span>
+                                        {% elif t.disponibilidad == 'ocupado' %}
+                                            <span class="badge bg-danger">{{ t.disponibilidad }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">{{ t.disponibilidad }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ t.especialidad|default:"—" }}</td>
+                                    <td>
+                                        {% if comp_map|get_item:t.user.id %}
+                                            <ul class="list-unstyled mb-0">
+                                                {% for c in comp_map|get_item:t.user.id %}
+                                                    <li>
+                                                        <i class="bi bi-check text-success"></i> {{ c.nombre }}
+                                                        {% if c.certificada %}<span class="badge badge-sm bg-info">Certificada</span>{% endif %}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if cert_map|get_item:t.user.id %}
+                                            <ul class="list-unstyled mb-0">
+                                                {% for cert in cert_map|get_item:t.user.id %}
+                                                    <li>
+                                                        <i class="bi bi-file-earmark-pdf text-danger"></i> {{ cert.nombre }}
+                                                        {% if cert.archivo %}
+                                                            – <a href="{{ cert.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                                <i class="bi bi-download"></i> Ver PDF
+                                                            </a>
+                                                        {% endif %}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if exp_map|get_item:t.user.id %}
+                                            <ul class="list-unstyled mb-0">
+                                                {% for exp in exp_map|get_item:t.user.id %}
+                                                    <li class="mb-1">
+                                                        {% if exp.proyecto %}
+                                                            <span class="badge bg-success">Interno</span> {{ exp.proyecto }}
+                                                        {% else %}
+                                                            <span class="badge bg-info">Externo</span> {{ exp.proyecto_externo }}{% if exp.empresa_externa %} ({{ exp.empresa_externa }}){% endif %}
+                                                        {% endif %}
+                                                        <br><small class="text-muted">Calificación: {{ exp.calificacion }}</small>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if t.user.trabajador_profile %}
+                                            <a href="{% url 'personal:editar_estado_trabajador' t.user.trabajador_profile.id %}"
+                                               class="btn btn-warning btn-sm px-3" title="Editar estado del trabajador">
+                                               <i class="bi bi-pencil-fill"></i> Estado
+                                            </a>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Sin perfil</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if t.user.trabajador_profile %}
+                                            <a href="{% url 'personal:detalle_trabajador' t.user.trabajador_profile.id %}"
+                                               class="btn btn-info btn-sm px-3" title="Ver ficha completa">
+                                               <i class="bi bi-file-text-fill"></i> Ficha
+                                            </a>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Sin ficha</span>
+                                        {% endif %}
+                                    </td>
+                                    {% if can_manage %}
+                                    <td class="text-center">
+                                        {% if cuadrillas|length > 1 %}
+                                            <form method="post" action="{% url 'personal:mover_trabajador' %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="asignacion_id" value="{{ t.asignacion.id }}">
+                                                <div class="input-group input-group-sm" style="min-width: 200px;">
+                                                    <select name="nueva_cuadrilla_id" class="form-select form-select-sm" required>
+                                                        <option value="" selected>Seleccionar...</option>
+                                                        {% for c in cuadrillas %}
+                                                            {% if c.id != cuadrilla.id %}
+                                                                <option value="{{ c.id }}">{{ c.nombre }}{% if c.proyecto %} - {{ c.proyecto.nombre }}{% endif %}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </select>
+                                                    <button type="submit" class="btn btn-sm btn-primary" title="Mover a otra cuadrilla">
+                                                        <i class="bi bi-arrow-right-circle"></i>
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        {% else %}
+                                            <span class="badge bg-secondary" title="No hay otras cuadrillas disponibles">
+                                                <i class="bi bi-dash-circle"></i> Sin destino
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <form method="post" action="{% url 'personal:quitar_trabajador' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="asignacion_id" value="{{ t.asignacion.id }}">
+                                            <button type="submit" class="btn btn-danger btn-sm px-3" title="Quitar de la cuadrilla"
+                                                    onclick="return confirm('¿Seguro que quieres quitar a {{ t.user.first_name }} {{ t.user.last_name }} de la cuadrilla?')">
+                                                <i class="bi bi-trash-fill"></i> Quitar
+                                            </button>
+                                        </form>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 {% else %}
-                    Sin rol
+                    <div class="alert alert-info m-3" role="alert">
+                        <i class="bi bi-info-circle"></i> No hay trabajadores asignados a esta cuadrilla.
+                    </div>
                 {% endif %}
-            </td>
-            <td>{{ t.disponibilidad }}</td>
-            <td>{{ t.especialidad }}</td>
-            <td>
-                {% if comp_map|get_item:t.user.id %}
-                    <ul>
-                        {% for c in comp_map|get_item:t.user.id %}
-                            <li>{{ c.nombre }} {% if c.certificada %}(Certificada){% endif %}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    —
-                {% endif %}
-            </td>
-            <td>
-                {% if cert_map|get_item:t.user.id %}
-                    <ul>
-                        {% for cert in cert_map|get_item:t.user.id %}
-                            <li>{{ cert.nombre }}
-                                {% if cert.archivo %}
-                                    – <a href="{{ cert.archivo.url }}" target="_blank">PDF</a>
-                                {% endif %}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    —
-                {% endif %}
-            </td>
-            <td>
-                {% if exp_map|get_item:t.user.id %}
-                    <ul>
-                        {% for exp in exp_map|get_item:t.user.id %}
-                            <li>
-                                {% if exp.proyecto %}
-                                    Proyecto interno: {{ exp.proyecto }}
-                                {% else %}
-                                    Externo: {{ exp.proyecto_externo }}{% if exp.empresa_externa %} ({{ exp.empresa_externa }}){% endif %}
-                                {% endif %}
-                                – {{ exp.calificacion }}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    —
-                {% endif %}
-            </td>
-            <td>
-                {% if t.user.trabajador_profile %}
-                    <a href="{% url 'personal:editar_estado_trabajador' t.user.trabajador_profile.id %}"
-                       class="btn btn-sm btn-warning">Estado</a>
-                {% else %}
-                    <em>Sin perfil</em>
-                {% endif %}
-            </td>
-            <td>
-                {% if t.user.trabajador_profile %}
-                    <a href="{% url 'personal:detalle_trabajador' t.user.trabajador_profile.id %}"
-                       class="btn btn-sm btn-info">Ficha</a>
-                {% else %}
-                    <em>Sin ficha</em>
-                {% endif %}
-            </td>
-            {% if can_manage %}
-            <td>
-                <form method="post" action="{% url 'personal:mover_trabajador' %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="asignacion_id" value="{{ t.asignacion.id }}">
-                    <select name="nueva_cuadrilla_id" class="form-select form-select-sm">
-                        {% for c in cuadrillas %}
-                            {% if c.id != cuadrilla.id %}
-                                <option value="{{ c.id }}">{{ c.nombre }}{% if c.proyecto %} ({{ c.proyecto.nombre }}){% endif %}</option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="btn btn-sm btn-outline-primary mt-1">Mover</button>
-                </form>
-            </td>
-            <td>
-                <form method="post" action="{% url 'personal:quitar_trabajador' %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="asignacion_id" value="{{ t.asignacion.id }}">
-                    <button type="submit" class="btn btn-sm btn-outline-danger mt-1" onclick="return confirm('¿Seguro que quieres quitar este trabajador de la cuadrilla?')">Quitar</button>
-                </form>
-            </td>
-            {% endif %}
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>No hay trabajadores asignados.</p>
-{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 
-<a href="{% url 'proyectos:panel' %}" class="btn btn-secondary mt-3">Volver</a>
-<a href="{% url 'personal:editar_cuadrilla' cuadrilla.id %}" class="btn btn-primary mt-3 ms-2">Editar</a>
-
-{% if can_manage and not cuadrilla.proyecto %}
-    <form method="post" action="{% url 'personal:disolver_cuadrilla' cuadrilla.id %}" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger mt-3 ms-2" onclick="return confirm('¿Seguro que quieres disolver esta cuadrilla? Esta acción eliminará la cuadrilla y sus asignaciones.')">Disolver Cuadrilla</button>
-    </form>
-{% endif %}
+    <!-- Botones de acción -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex gap-2">
+                <a href="{% url 'proyectos:panel' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver al Panel
+                </a>
+                <a href="{% url 'personal:editar_cuadrilla' cuadrilla.id %}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Editar Cuadrilla
+                </a>
+                {% if can_manage and not cuadrilla.proyecto %}
+                    <form method="post" action="{% url 'personal:disolver_cuadrilla' cuadrilla.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger"
+                                onclick="return confirm('¿Seguro que quieres disolver esta cuadrilla? Esta acción eliminará la cuadrilla y sus asignaciones.')">
+                            <i class="bi bi-x-circle"></i> Disolver Cuadrilla
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

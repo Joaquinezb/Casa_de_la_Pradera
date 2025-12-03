@@ -1,16 +1,42 @@
 from django import forms
 from .models import Proyecto
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Submit, Field, Row, Column, Div
 
 class ProyectoForm(forms.ModelForm):
     class Meta:
         model = Proyecto
         fields = ['nombre', 'tipo', 'complejidad', 'descripcion', 'fecha_inicio', 'fecha_termino', 'activo']
-        widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
-            'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'complejidad': forms.Select(attrs={'class': 'form-select'}),
-            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'fecha_inicio': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'fecha_termino': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        labels = {
+            'nombre': 'Nombre del Proyecto',
+            'tipo': 'Tipo de Proyecto',
+            'complejidad': 'Complejidad',
+            'descripcion': 'Descripción',
+            'fecha_inicio': 'Fecha de Inicio',
+            'fecha_termino': 'Fecha de Término',
+            'activo': 'Activo'
         }
+        widgets = {
+            'descripcion': forms.Textarea(attrs={'rows': 4}),
+            'fecha_inicio': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_termino': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Field('nombre', placeholder='Ingrese el nombre del proyecto'),
+            Row(
+                Column('tipo', css_class='form-group col-md-6'),
+                Column('complejidad', css_class='form-group col-md-6'),
+            ),
+            Field('descripcion', placeholder='Describa el proyecto'),
+            Row(
+                Column('fecha_inicio', css_class='form-group col-md-6'),
+                Column('fecha_termino', css_class='form-group col-md-6'),
+            ),
+            Field('activo', wrapper_class='form-check'),
+            Submit('submit', 'Guardar Proyecto', css_class='btn btn-success mt-3')
+        )

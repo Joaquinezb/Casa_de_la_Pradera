@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "crispy_forms",
+    "crispy_bootstrap5",
     "core",
     "usuarios",
     "proyectos",
@@ -145,3 +147,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Forzar cambio de password inicial en entorno de desarrollo/des pruebas
 PERSONAL_FORCE_PASSWORD_CHANGE = True
+
+# Django Crispy Forms Configuration
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
