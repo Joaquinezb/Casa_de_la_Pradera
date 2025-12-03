@@ -11,6 +11,11 @@
   --secondary: #64748b;
   --accent: #f59e0b;
 
+  /* Acción específica: Enviar Solicitud */
+  /* Color corporativo suave para "Enviar Solicitud" */
+  --solicitud-primary: #3b82f6;        /* azul suave */
+  --solicitud-primary-hover: #3b82f6;  /* azul medio para hover */
+
   /* Estados de proyectos/tareas */
   --success: #10b981;
   --warning: #f59e0b;
@@ -182,7 +187,7 @@ body {
 .badge--success { background: #d1fae5; color: #065f46; }
 .badge--warning { background: #fef3c7; color: #92400e; }
 .badge--danger  { background: #fee2e2; color: #991b1b; }
-.badge--info    { background: #dbeafe; color: #1e40af; }
+.badge--info    { background: #dbeafe; color: #254ed2; }
 .badge--pending { background: #ede9fe; color: #5b21b6; }
 .badge--muted   { background: var(--bg-tertiary); color: var(--text-secondary); }
 

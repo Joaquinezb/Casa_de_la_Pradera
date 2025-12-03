@@ -123,3 +123,37 @@
   color: var(--color-muted);
   padding: 48px 24px;
 }
+
+/* Botón específico: Enviar Solicitud */
+.btn.btn--solicitud,
+a.btn.btn--solicitud {
+  background: var(--solicitud-primary) !important;
+  color: var(--text-white) !important;
+  border: 1px solid var(--solicitud-primary) !important;
+}
+.btn.btn--solicitud:hover,
+a.btn.btn--solicitud:hover {
+  background: var(--solicitud-primary-hover) !important;
+  border-color: var(--solicitud-primary-hover) !important;
+  box-shadow: var(--shadow-md);
+}
+
+/* Botón específico: Reportar Incidente */
+.btn.btn--incidente,
+a.btn.btn--incidente {
+  background: var(--danger) !important; /* rojo alerta */
+  color: var(--text-white) !important;
+  border: 1px solid var(--danger) !important;
+}
+.btn.btn--incidente:hover,
+a.btn.btn--incidente:hover {
+  background: #dc2626 !important; /* hover más oscuro */
+  border-color: #dc2626 !important;
+  box-shadow: var(--shadow-md);
+}
+
+/* Encabezado de la tarjeta Enviar Solicitud */
+.solicitud-header {
+  background: var(--solicitud-primary) !important;
+  color: var(--text-white) !important;
+}

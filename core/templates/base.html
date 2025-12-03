@@ -34,10 +34,12 @@
                 <a href="{% url 'proyectos:panel' %}"
                    {% if '/proyectos' in request.path %}aria-current="page"{% endif %}>Gestión de proyectos</a>
             </li>
+            {% if request.user|has_group:'JefeProyecto' %}
             <li>
                 <a href="{% url 'personal:crear_cuadrilla' %}"
                    {% if '/personal' in request.path %}aria-current="page"{% endif %}>Gestión de cuadrillas</a>
             </li>
+            {% endif %}
             {% elif request.user|has_group:'Trabajador' %}
             <li>
                 <a href="{% url 'personal:mi_cuadrilla' %}"

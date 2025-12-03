@@ -114,8 +114,8 @@
 <div class="card">
     <div class="card-title">Acciones Rápidas</div>
     <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px;">
-        <a href="{% url 'comunicacion:enviar_solicitud' %}" class="btn btn--primary">Enviar Solicitud</a>
-        <a href="{% url 'comunicacion:reportar_incidente' %}" class="btn btn--primary">Reportar Incidente</a>
+        <a href="{% url 'comunicacion:enviar_solicitud' %}" class="btn btn--solicitud">Enviar Solicitud</a>
+        <a href="{% url 'comunicacion:reportar_incidente' %}" class="btn btn--incidente">Reportar Incidente</a>
         {% if user.groups.all|join:", " == "LiderCuadrilla" or user.groups.all|join:", " == "JefeProyecto" %}
         <a href="{% url 'comunicacion:solicitudes_list' %}" class="btn btn--ghost">Ver Solicitudes</a>
         <a href="{% url 'comunicacion:incidentes_list' %}" class="btn btn--ghost">Ver Incidentes</a>
