@@ -104,6 +104,15 @@
               class="btn btn-sm btn-outline-primary mt-2 btn-asignar-cuadrillas">Asignar / Editar Cuadrillas</a>
         {% endif %}
 
+        {% if is_lider_view %}
+        <div class="mt-3" style="color: var(--color-muted); font-size: 13px;">
+            Consejo: puedes editar solo tu(s) propia(s) cuadrilla(s). Si necesitas recursos o permisos, usa
+            <a href="{% url 'comunicacion:enviar_solicitud' %}" class="btn btn--ghost" style="padding: 4px 10px; font-size: 13px; margin-left: 6px;">Enviar Solicitud</a>
+            o abre
+            <a href="{% url 'comunicacion:conversations_list' %}" class="btn btn--ghost" style="padding: 4px 10px; font-size: 13px; margin-left: 6px;">Conversaciones</a>.
+        </div>
+        {% endif %}
+
         {% if item.proyecto.activo %}
             {# Proyecto activo: solo mostrar botón si el usuario puede finalizarlo #}
             {% if item.can_finalize %}
