@@ -112,7 +112,7 @@
 
         {% if item.can_assign %}
           <a href="{% url 'proyectos:asignar_cuadrillas' item.proyecto.id %}"
-              class="btn btn-sm btn-outline-primary mt-2 btn-asignar-cuadrillas">Asignar Cuadrillas</a>
+              class="btn btn-outline-primary mt-3 w-100" style="display:block; height: 2.5rem;">Asignar Cuadrillas</a>
         {% endif %}
 
         {% if is_lider_view %}
