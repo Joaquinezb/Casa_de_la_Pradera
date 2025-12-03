@@ -6,15 +6,14 @@ from crispy_forms.layout import Layout, Submit, Field, Row, Column, Div
 class ProyectoForm(forms.ModelForm):
     class Meta:
         model = Proyecto
-        fields = ['nombre', 'tipo', 'complejidad', 'descripcion', 'fecha_inicio', 'fecha_termino', 'activo']
+        fields = ['nombre', 'tipo', 'complejidad', 'descripcion', 'fecha_inicio', 'fecha_termino']
         labels = {
             'nombre': 'Nombre del Proyecto',
             'tipo': 'Tipo de Proyecto',
             'complejidad': 'Complejidad',
-            'descripcion': 'Descripción',
+            'descripción': 'Descripción',
             'fecha_inicio': 'Fecha de Inicio',
-            'fecha_termino': 'Fecha de Término',
-            'activo': 'Activo'
+            'fecha_termino': 'Fecha de Término'
         }
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 4}),
@@ -37,6 +36,5 @@ class ProyectoForm(forms.ModelForm):
                 Column('fecha_inicio', css_class='form-group col-md-6'),
                 Column('fecha_termino', css_class='form-group col-md-6'),
             ),
-            Field('activo', wrapper_class='form-check'),
             Submit('submit', 'Guardar Proyecto', css_class='btn btn-success mt-3')
         )
