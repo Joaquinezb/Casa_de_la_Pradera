@@ -2,20 +2,20 @@
 
 ## Variables CSS Disponibles
 
-### 🎨 Colores Primarios
+###  Colores Primarios
 ```css
 --primary: #1e40af;        /* Azul corporativo principal */
 --primary-dark: #1e3a8a;   /* Azul oscuro para hover */
 --primary-light: #3b82f6;  /* Azul claro para elementos secundarios */
 ```
 
-### 🎨 Colores Secundarios
+### Colores Secundarios
 ```css
 --secondary: #64748b;      /* Gris azulado para textos secundarios */
 --accent: #f59e0b;         /* Naranja/Ámbar para llamadas a la acción */
 ```
 
-### ✅ Colores de Estado
+###  Colores de Estado
 ```css
 --success: #10b981;        /* Verde - Completado */
 --warning: #f59e0b;        /* Ámbar - En progreso */
@@ -24,7 +24,7 @@
 --pending: #8b5cf6;        /* Púrpura - Pendiente */
 ```
 
-### 🎨 Backgrounds
+###  Backgrounds
 ```css
 --bg-primary: #ffffff;     /* Fondo principal */
 --bg-secondary: #f8fafc;   /* Fondo alternativo */
@@ -38,8 +38,7 @@
 --border-medium: #cbd5e1;  /* Bordes medios */
 --border-dark: #94a3b8;    /* Bordes destacados */
 ```
-
-### 📝 Textos
+### Textos
 ```css
 --text-primary: #0f172a;   /* Texto principal */
 --text-secondary: #475569; /* Texto secundario */
@@ -47,7 +46,7 @@
 --text-white: #ffffff;     /* Texto sobre fondos oscuros */
 ```
 
-### 📊 Tablas
+### Tablas
 ```css
 --table-header: #f1f5f9;   /* Fondo encabezado de tabla */
 --table-row-odd: #ffffff;  /* Fila impar */
@@ -56,7 +55,7 @@
 --table-border: #e2e8f0;   /* Bordes de tabla */
 ```
 
-### 📝 Formularios
+###  Formularios
 ```css
 --input-bg: #ffffff;       /* Fondo de inputs */
 --input-border: #cbd5e1;   /* Borde normal */
@@ -65,7 +64,7 @@
 --input-error: #fecaca;    /* Fondo de input con error */
 ```
 
-### 🌑 Sombras
+### Sombras
 ```css
 --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -74,7 +73,7 @@
 
 ---
 
-## 🔧 Uso de Variables
+## Uso de Variables
 
 ### Ejemplo: Card
 ```css
