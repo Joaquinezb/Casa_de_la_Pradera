@@ -27,7 +27,7 @@
         <ul class="sidebar-nav">
             {% if request.user|has_group:'JefeProyecto' or request.user|has_group:'LiderCuadrilla' %}
             <li>
-                <a href="{% url 'dashboard' %}"
+                <a href="{% url 'core:dashboard' %}"
                    {% if request.path == '/' or request.path|slice:":10" == '/dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
             </li>
             <li>

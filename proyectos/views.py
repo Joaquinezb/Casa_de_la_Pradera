@@ -58,8 +58,24 @@ def panel_proyectos(request):
     # JefeProyecto: ver todos los proyectos y sus cuadrillas (lectura completa).
     # Las acciones de edición/creación siguen restringidas por otras vistas.
     if user.groups.filter(name='JefeProyecto').exists():
-        proyectos_activos = Proyecto.objects.filter(activo=True).prefetch_related('cuadrillas')
-        proyectos_finalizados = Proyecto.objects.filter(activo=False).prefetch_related('cuadrillas')
+        from django.db.models import Case, When, Value, IntegerField
+        
+        # Ordenar proyectos: primero los que el usuario actual es jefe, luego los demás
+        proyectos_activos = Proyecto.objects.filter(activo=True).annotate(
+            es_mi_proyecto=Case(
+                When(jefe=user, then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField()
+            )
+        ).order_by('es_mi_proyecto', 'nombre').prefetch_related('cuadrillas')
+        
+        proyectos_finalizados = Proyecto.objects.filter(activo=False).annotate(
+            es_mi_proyecto=Case(
+                When(jefe=user, then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField()
+            )
+        ).order_by('es_mi_proyecto', 'nombre').prefetch_related('cuadrillas')
 
         data = []
         for p in proyectos_activos:

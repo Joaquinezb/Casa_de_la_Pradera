@@ -11,7 +11,7 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('dashboard')  # redirige al dashboard de core
+            return redirect('core:dashboard')  # redirige al dashboard de core
         else:
             return render(request, 'login.html', {'error': 'Credenciales inválidas'})
     return render(request, 'login.html')

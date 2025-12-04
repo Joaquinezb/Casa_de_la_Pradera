@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div style="margin-bottom: 24px;">
+        <h2>Asignar Cuadrillas a Proyectos</h2>
+        <p style="color: var(--color-muted);">Seleccione el proyecto para cada cuadrilla disponible</p>
+    </div>
+
+    {% if cuadrillas_disponibles %}
+    <form method="POST">
+        {% csrf_token %}
+        
+        <div class="card" style="padding: 24px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--color-border);">
+                        <th style="text-align: left; padding: 12px;">Cuadrilla</th>
+                        <th style="text-align: left; padding: 12px;">Líder</th>
+                        <th style="text-align: center; padding: 12px;">Trabajadores</th>
+                        <th style="text-align: left; padding: 12px;">Asignar a Proyecto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cuadrilla in cuadrillas_disponibles %}
+                    <tr style="border-bottom: 1px solid var(--color-border);">
+                        <td style="padding: 12px;">
+                            <strong>{{ cuadrilla.nombre }}</strong>
+                        </td>
+                        <td style="padding: 12px;">
+                            {{ cuadrilla.lider.username|default:"Sin líder" }}
+                        </td>
+                        <td style="padding: 12px; text-align: center;">
+                            {{ cuadrilla.asignaciones.count }}
+                        </td>
+                        <td style="padding: 12px;">
+                            <select name="proyecto_{{ cuadrilla.id }}" style="width: 100%; padding: 8px; border: 1px solid var(--color-border); border-radius: 4px;">
+                                <option value="">-- No asignar --</option>
+                                {% for proyecto in proyectos_activos %}
+                                <option value="{{ proyecto.id }}">{{ proyecto.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 24px; display: flex; gap: 12px;">
+            <button type="submit" class="btn btn--primary">Guardar Asignaciones</button>
+            <a href="{% url 'core:dashboard' %}" class="btn btn--ghost">Cancelar</a>
+        </div>
+    </form>
+    {% else %}
+    <div class="card" style="padding: 24px; text-align: center;">
+        <p style="color: var(--color-muted); margin: 0;">No hay cuadrillas disponibles para asignar.</p>
+        <div style="margin-top: 16px;">
+            <a href="{% url 'core:dashboard' %}" class="btn btn--primary">Volver al Dashboard</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
