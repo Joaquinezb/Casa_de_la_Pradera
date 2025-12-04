@@ -25,9 +25,13 @@ def dashboard_redirect(request):
     cuadrillas_activas = Cuadrilla.objects.exclude(proyecto__isnull=True).count()
     cuadrillas_sin_proyecto = Cuadrilla.objects.filter(proyecto__isnull=True).count()
     
-    # Total de trabajadores
-    total_trabajadores = User.objects.filter(groups__name='Trabajador').count()
+    # Total de trabajadores - Contar desde el modelo Trabajador (no desde User)
+    total_trabajadores = Trabajador.objects.filter(activo=True).count()
+    
+    # Trabajadores asignados (que tienen user y están en asignaciones)
     trabajadores_asignados = Asignacion.objects.values('trabajador').distinct().count()
+    
+    # Trabajadores disponibles
     trabajadores_disponibles = total_trabajadores - trabajadores_asignados
     
     # Proyectos recientes (últimos 5 activos)

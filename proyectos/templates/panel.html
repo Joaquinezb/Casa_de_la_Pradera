@@ -93,7 +93,7 @@
                     {% with c=citem.cuadrilla %}
                     <li>
                         <strong>{{ c.nombre }}</strong>
-                        — Líder: {{ c.lider.username|default:"(Sin líder)" }}
+                        — Líder: {% if c.lider %}{{ c.lider.get_full_name|default:c.lider.username }}{% else %}(Sin líder){% endif %}
                         — ({{ c.asignaciones.count }} trabajadores)
 
                         <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-outline-primary ms-2">
@@ -221,7 +221,7 @@
                 {% with c=entry.cuadrilla %}
                 <li class="mb-3">
                     <strong>{{ c.nombre }}</strong>
-                    — Líder: {{ c.lider.username|default:"(Sin líder)" }}
+                    — Líder: {% if c.lider %}{{ c.lider.get_full_name|default:c.lider.username }}{% else %}(Sin líder){% endif %}
                     — ({{ c.asignaciones.count }} trabajadores)
                     <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-outline-primary ms-2">Ver</a>
                     {% if entry.can_edit or request.user|has_group:'JefeProyecto' and not c.proyecto %}
