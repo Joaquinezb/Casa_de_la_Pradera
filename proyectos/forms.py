@@ -17,12 +17,17 @@ class ProyectoForm(forms.ModelForm):
         }
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 4}),
-            'fecha_inicio': forms.DateInput(attrs={'type': 'date'}),
-            'fecha_termino': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_inicio': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'fecha_termino': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # Configurar formato de fecha para input type="date"
+        self.fields['fecha_inicio'].input_formats = ['%Y-%m-%d']
+        self.fields['fecha_termino'].input_formats = ['%Y-%m-%d']
+        
         self.helper = FormHelper()
         self.helper.form_method = 'post'
         self.helper.layout = Layout(

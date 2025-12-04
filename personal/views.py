@@ -621,7 +621,7 @@ def mover_trabajador(request):
         )
         crear_notificacion(nueva.lider, mensaje_lider)
 
-    return redirect('personal:detalle_cuadrilla', nueva.id)
+    return redirect('personal:detalle_cuadrilla', antigua.id)
 
 
 
