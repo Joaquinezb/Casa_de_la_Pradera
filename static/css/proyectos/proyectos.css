@@ -36,3 +36,22 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
+
+/* Botón warning con color amarillo pastel */
+.btn-warning-pastel {
+    background-color: #ffe89e;
+    border-color: #ffd966;
+    color: #5a4a00;
+}
+
+.btn-warning-pastel:hover {
+    background-color: #ffd966;
+    border-color: #ffcc33;
+    color: #5a4a00;
+}
+
+.btn-warning-pastel:disabled {
+    background-color: #fff4d6;
+    border-color: #ffe89e;
+    color: #8a7a50;
+}

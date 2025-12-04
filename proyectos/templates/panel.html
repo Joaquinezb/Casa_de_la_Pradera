@@ -5,24 +5,17 @@
 {% endblock %}
 {% block content %}
 <style>
-.btn-asignar-cuadrillas {
-    height: 39px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-        min-width: 240px;
-}
+/* Estilos responsive para btn-asignar-cuadrillas */
 @media (max-width: 992px) {
-    .btn-asignar-cuadrillas { min-width: 200px; }
+    .btn-asignar-cuadrillas { 
+        min-width: 200px !important;
+        width: auto !important;
+    }
 }
 @media (max-width: 768px) {
     .btn-asignar-cuadrillas {
-        width: 100%;
-        min-width: 0;
-        display: flex;
+        width: 100% !important;
+        min-width: 0 !important;
     }
 }
 </style>
@@ -88,19 +81,19 @@
 
         <h5 class="mt-3">Cuadrillas asignadas</h5>
         {% if item.cuadrillas %}
-            <ul>
+            <ul style="list-style-type: disc; padding-left: 20px;">
                 {% for citem in item.cuadrillas %}
                     {% with c=citem.cuadrilla %}
-                    <li>
+                    <li style="margin-bottom: 20px; padding-bottom: 10px;">
                         <strong>{{ c.nombre }}</strong>
                         — Líder: {% if c.lider %}{{ c.lider.get_full_name|default:c.lider.username }}{% else %}(Sin líder){% endif %}
                         — ({{ c.asignaciones.count }} trabajadores)
 
-                        <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-outline-primary ms-2">
+                        <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-primary ms-2">
                             Ver cuadrilla
                         </a>
                         {% if citem.can_edit %}
-                            <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-outline-secondary ms-2">Editar cuadrilla</a>
+                            <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-warning-pastel ms-2">Editar cuadrilla</a>
                         {% endif %}
                     </li>
                     {% endwith %}
@@ -112,7 +105,7 @@
 
         {% if item.can_assign %}
           <a href="{% url 'proyectos:asignar_cuadrillas' item.proyecto.id %}"
-              class="btn btn-outline-primary mt-3 w-100" style="display:block; height: 2.5rem;">Asignar Cuadrillas</a>
+              class="btn btn-primary mt-3 w-100" style="display:block; height: 2.5rem;">Asignar Cuadrillas</a>
         {% endif %}
 
         {% if is_lider_view %}
@@ -135,7 +128,7 @@
         {% endif %}
 
         {% if item.can_create_cuadrilla %}
-            <a href="{% url 'personal:crear_cuadrilla' %}" class="btn btn-outline-primary">+ Crear Cuadrilla</a>
+            <a href="{% url 'personal:crear_cuadrilla' %}" class="btn btn-primary">+ Crear Cuadrilla</a>
         {% endif %}
 
     </div>
@@ -215,19 +208,19 @@
     <div class="card mt-4">
         <div class="card-body">
             <h5>Cuadrillas sin proyecto</h5>
-            <ul>
+            <ul style="list-style-type: disc; padding-left: 20px;">
             {% load custom_tags %}
             {% for entry in cuadrillas_sin_proyecto %}
                 {% with c=entry.cuadrilla %}
-                <li class="mb-3">
+                <li class="mb-3" style="margin-bottom: 20px; padding-bottom: 10px;">
                     <strong>{{ c.nombre }}</strong>
                     — Líder: {% if c.lider %}{{ c.lider.get_full_name|default:c.lider.username }}{% else %}(Sin líder){% endif %}
                     — ({{ c.asignaciones.count }} trabajadores)
-                    <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-outline-primary ms-2">Ver</a>
+                    <a href="{% url 'personal:detalle_cuadrilla' c.id %}" class="btn btn-sm btn-primary ms-2">Ver</a>
                     {% if entry.can_edit or request.user|has_group:'JefeProyecto' and not c.proyecto %}
-                        <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-outline-secondary ms-2">Editar</a>
+                        <a href="{% url 'personal:editar_cuadrilla' c.id %}" class="btn btn-sm btn-warning-pastel ms-2">Editar</a>
                     {% else %}
-                        <button class="btn btn-sm btn-outline-secondary ms-2" disabled title="No autorizado">Editar</button>
+                        <button class="btn btn-sm btn-warning-pastel ms-2" disabled title="No autorizado">Editar</button>
                     {% endif %}
                     {% if entry.can_disolver or request.user|has_group:'JefeProyecto' and not c.proyecto %}
                         <form method="post" action="{% url 'personal:disolver_cuadrilla' c.id %}" class="form-inline">
