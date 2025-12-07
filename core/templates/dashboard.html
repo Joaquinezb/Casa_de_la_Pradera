@@ -5,6 +5,76 @@
 {% endblock %}
 
 {% block content %}
+{% if is_lider and not is_jefe %}
+<div class="container mt-4" style="margin-bottom: 24px;">
+    <h2 style="margin-bottom: 8px;">Dashboard</h2>
+    <p style="color: var(--color-muted);">Resumen de tu proyecto y cuadrilla</p>
+
+    {% if sin_cuadrilla %}
+        <div class="card" style="margin-top: 16px;">
+            <div class="card-title">Sin cuadrilla asignada</div>
+            <p style="color: var(--color-muted);">No tienes una cuadrilla asignada actualmente. Contacta a tu jefe de proyecto para recibir una.</p>
+        </div>
+    {% else %}
+        <div class="dashboard-metrics">
+            <div class="card-kpi">
+                <div class="heading">Mi proyecto actual</div>
+                <div class="number">{{ proyecto_actual.nombre|default:"—" }}</div>
+            </div>
+            <div class="card-kpi">
+                <div class="heading">Mi cuadrilla</div>
+                <div class="number">{{ cuadrilla_lider.nombre }}</div>
+            </div>
+            <div class="card-kpi">
+                <div class="heading">Mis trabajadores</div>
+                <div class="number">{{ total_miembros }}</div>
+            </div>
+            <div class="card-kpi">
+                <div class="heading">Estado</div>
+                <div class="number" style="font-size: 15px; line-height: 1.4;">
+                    {{ conteos_estado.trabajando }} Trabajando<br>
+                    {{ conteos_estado.disponibles }} Disponibles<br>
+                    {{ conteos_estado.vacaciones }} En vacaciones
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid--cols-2" style="margin-top: 24px;">
+            <div class="card">
+                <div class="card-title">Proyecto Actual</div>
+                {% if proyecto_actual %}
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="padding: 8px 0;">
+                            <strong>{{ proyecto_actual.nombre }}</strong>
+                            <div style="font-size: 13px; color: var(--color-muted); margin-top: 4px;">
+                                Inicio: {{ proyecto_actual.fecha_inicio }}<br>
+                                Estado: {{ estado_proyecto_label }}
+                            </div>
+                        </li>
+                    </ul>
+                {% else %}
+                    <p style="color: var(--color-muted);">Sin proyecto asignado.</p>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <div class="card-title">Mi Cuadrilla</div>
+                {% if miembros_cuadrilla %}
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        {% for miembro in miembros_cuadrilla %}
+                        <li style="padding: 8px 0; border-bottom: 1px solid var(--color-border);">
+                            • {{ miembro.nombre }} - {{ miembro.estado }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p style="color: var(--color-muted);">No hay trabajadores asignados.</p>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% else %}
 <div style="margin-bottom: 24px;">
     <div class="container mt-4">
         <style>
@@ -173,4 +243,5 @@ document.getElementById('modalAsignarCuadrilla')?.addEventListener('click', func
 </script>
 {% endif %}
 
+{% endif %}
 {% endblock %}

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django import forms
 from .models import Proyecto
 from crispy_forms.helper import FormHelper
@@ -50,9 +51,13 @@ class ProyectoForm(forms.ModelForm):
         fecha_termino = cleaned_data.get('fecha_termino')
 
         if fecha_inicio and fecha_termino:
-            if fecha_termino < fecha_inicio:
+            if fecha_termino <= fecha_inicio:
                 raise forms.ValidationError(
-                    'La fecha de término no puede ser anterior a la fecha de inicio.'
+                    'La fecha de término debe ser al menos un día después de la fecha de inicio.'
+                )
+            if (fecha_termino - fecha_inicio) < timedelta(days=1):
+                raise forms.ValidationError(
+                    'Debe existir un día completo de diferencia entre inicio y término.'
                 )
 
         return cleaned_data
